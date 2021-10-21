@@ -1,6 +1,6 @@
 """Super impose images of the body and the flagella."""
 
-from typing import Tuple, List
+from typing import Tuple, List, NamedTuple
 from statistics import median
 
 import matplotlib.image as mpim
@@ -14,6 +14,22 @@ from scipy.signal import correlate2d
 MIRE_PATH = "/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/Image0574023.tif"
 
 IM_SIZE = (1024, 1024)
+
+class MireInfo:
+    def __init__(self, middle_line: int, displacement: Tuple[int, int]) -> None:
+        self.middle_line = middle_line
+        self.displacement = displacement
+    
+    def delta_x(self) -> int:
+        """Return the displacement in x"""
+        return self.displacement[0]
+    
+    def delta_y(self) -> int:
+        """Return the displacement in y"""
+        return self.displacement[1]
+    
+    def __repr__(self) -> str:
+        return f"Mire info:\n middle_line: {self.middle_line}\n Displacement: {self.displacement}"
 
 
 def moving_average(array: np.ndarray, averaging_length: int) -> np.ndarray:
@@ -41,7 +57,6 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
         plt.imshow(mire_im, cmap="gray")
         plt.plot([0, IM_SIZE[0]], [separation, separation], "-r")
         plt.xlim([0, IM_SIZE[0]])
-    plt.show()
     return int(separation)
 
 
@@ -141,34 +156,36 @@ def manual_find_displacement(
     green_mire: np.ndarray,
     red_mire) -> Tuple[int, int]:
     """Manually find the displacement in the image by clicking on a point."""
-    plt.figure()
+    fig = plt.figure()
     plt.imshow(green_mire)
     point_one = plt.ginput(1)[0]
-    plt.close()
-    plt.figure()
+    plt.close(fig)
+    fig = plt.figure()
     plt.imshow(red_mire)
     point_two = plt.ginput(1)[0]
-    plt.close()
-    print(point_one)
-    print(point_two)
+    plt.close(fig)
+
     delta_x = int(point_two[0] - point_one[0])
     delta_y = int(point_two[1] - point_one[1])
     return (delta_y, delta_x)
 
-
-
-
-if __name__ == "__main__":
-    mire_im = mpim.imread(MIRE_PATH) 
+def mire_analysis(mire_path: str, visualization: bool = False) -> MireInfo:
+    """Perform the mire analysis"""
+    mire_im = mpim.imread(mire_path) 
     mire_im = mire_im / np.amax(mire_im)
-    middle_line = find_separation(mire_im, visualization=False)
+    middle_line = find_separation(mire_im, visualization)
     red_mire, green_mire = split_image(mire_im, middle_line)
 
     displacement = manual_find_displacement(green_mire, red_mire)
     super_imposed = super_impose_two_im(green_mire, red_mire, displacement)
 
-    plt.figure()
-    plt.imshow(super_imposed)
-    plt.show(block=True)
-    
+    if visualization:
+        plt.figure()
+        plt.imshow(super_imposed)
+        plt.show(block=True)
+    res = MireInfo(middle_line, displacement)
+    return res
+
+if __name__ == "__main__":
+    print(mire_analysis(MIRE_PATH, visualization=True))
 
