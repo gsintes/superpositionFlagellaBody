@@ -118,6 +118,7 @@ def find_displacement(
         plt.plot(i, j, "*r")
     return (delta_x, delta_y)
 
+
 def shift_image(
     image: np.ndarray,
     displacement: Tuple[int, int]) -> np.ndarray:
@@ -152,6 +153,7 @@ def super_impose_two_im(
      np.zeros(green_im.shape).transpose()])
     return super_imposed.transpose()
 
+
 def manual_find_displacement(
     green_mire: np.ndarray,
     red_mire) -> Tuple[int, int]:
@@ -168,6 +170,7 @@ def manual_find_displacement(
     delta_x = int(point_two[0] - point_one[0])
     delta_y = int(point_two[1] - point_one[1])
     return (delta_y, delta_x)
+
 
 def mire_analysis(mire_path: str, visualization: bool = False) -> MireInfo:
     """Perform the mire analysis"""
@@ -186,6 +189,11 @@ def mire_analysis(mire_path: str, visualization: bool = False) -> MireInfo:
     res = MireInfo(middle_line, displacement)
     return res
 
+def superposition(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
+    """Superimpose the two colors according to the info of the mire."""
+    red_im, green_im = split_image(image, mire_info.middle_line)
+    return super_impose_two_im(green_im, red_im, mire_info.displacement)
+
+
 if __name__ == "__main__":
     print(mire_analysis(MIRE_PATH, visualization=True))
-
