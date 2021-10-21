@@ -10,8 +10,6 @@ from skimage.filters.thresholding import threshold_otsu
 from skimage import exposure
 from scipy.signal import correlate2d
 
-import makeTestIm
-
 # MIRE_PATH = "/Volumes/GUILLAUME/2021-10-08_chaintracking/2021-10-08_15h56m14sMyre/Image0007645.tif"
 MIRE_PATH = "/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/Image0574023.tif"
 
