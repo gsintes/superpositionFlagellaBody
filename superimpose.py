@@ -1,6 +1,6 @@
 """Super impose images of the body and the flagella."""
 
-from typing import Tuple, List, NamedTuple
+from typing import Tuple
 from statistics import median
 import json
 import os
@@ -12,10 +12,7 @@ from skimage.filters.thresholding import threshold_otsu
 from skimage import exposure
 from scipy.signal import correlate2d
 
-# MIRE_PATH = "/Volumes/GUILLAUME/2021-10-08_chaintracking/2021-10-08_15h56m14sMyre/Image0007645.tif"
-MIRE_PATH = "/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/Image0574023.tif"
-
-IM_SIZE = (1024, 1024)
+import constants
 
 class MireInfo:
     def __init__(self, *args) -> None:
@@ -57,7 +54,7 @@ def moving_average(array: np.ndarray, averaging_length: int) -> np.ndarray:
 
 def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
     """Open the mire image and find the separation line."""
-    loc_profiles = range(10, IM_SIZE[0] - 10, 10)
+    loc_profiles = range(10, constants.IM_SIZE[0] - 10, 10)
     separators = []
     for loc_profile in loc_profiles:
         profile = mire_im[:, loc_profile] / max(mire_im[:, loc_profile])
@@ -73,8 +70,8 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
 
         plt.figure()
         plt.imshow(mire_im, cmap="gray")
-        plt.plot([0, IM_SIZE[0]], [separation, separation], "-r")
-        plt.xlim([0, IM_SIZE[0]])
+        plt.plot([0, constants.IM_SIZE[0]], [separation, separation], "-r")
+        plt.xlim([0, constants.IM_SIZE[0]])
     return int(separation)
 
 
@@ -213,5 +210,5 @@ def superposition(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
 
 
 if __name__ == "__main__":
-    mire_info = mire_analysis(MIRE_PATH, visualization=True)
+    mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
     mire_info.save("/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/")
