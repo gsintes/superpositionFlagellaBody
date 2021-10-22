@@ -17,7 +17,7 @@ IM_SIZE = (1024, 1024)
 
 def detect_body(
     green_im: np.ndarray,
-    visualization: bool = False) -> Tuple[float, float]:
+    visualization: bool = False) -> float:
     """Detect the body in the green image."""
     blur = gaussian(green_im, 2)
     bin_green = superimpose.binarize(blur)
@@ -37,10 +37,31 @@ def detect_body(
         axis[0].plot(a * x + b, x, "-g", linewidth=3)
         axis[1].imshow(bin_green, cmap="gray")
         axis[1].plot(a * x + b, x, "-g", linewidth=3)
-    return (a, b)
+    return a
 
-
-
+def detect_flagella(
+    red_im: np.ndarray,
+    visualization: bool = False) -> float:
+    """Detect the flagella in the red image."""
+    blur = gaussian(red_im, 2)
+    bin_red = superimpose.binarize(blur)
+    x = []
+    y = []
+    for i in range(bin_red.shape[0]):
+        for j in range(bin_red.shape[1]):
+            if bin_red[i, j] == 1:
+                x.append(i)
+                y.append(j)
+    x = np.array(x)
+    y = np.array(y)
+    a, b =np.polyfit(x, y, 1)
+    if visualization:
+        _, axis =plt.subplots(1, 2)
+        axis[0].imshow(red_im, cmap="gray")
+        axis[0].plot(a * x + b, x, "-r", linewidth=3)
+        axis[1].imshow(bin_red, cmap="gray")
+        axis[1].plot(a * x + b, x, "-r", linewidth=3)
+    return a
 
 
 if __name__ == "__main__":
@@ -53,8 +74,8 @@ if __name__ == "__main__":
     super_imposed = superimpose.superposition(im_test, mire_info)
     super_imposed = superimpose.select_center_image(super_imposed, 100)
 
-    green_im = super_imposed[:,:, 1]
-    mpim.imsave("green_im.png", green_im, cmap="gray")
-    detect_body(green_im, visualization=True)
-
+    green_im = super_imposed[:, :, 1]
+    red_im = super_imposed[:, :, 0]
+    detect_body(green_im)
+    detect_flagella(red_im, visualization=True)
     plt.show(block=True)
