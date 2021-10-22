@@ -108,11 +108,11 @@ def split_image(
     return red_im, green_im
 
 
-def select_center_image(image: np.ndarray) -> np.ndarray:
+def select_center_image(image: np.ndarray, size: int) -> np.ndarray:
     """Return the center part of the image."""
     x_mean = image.shape[0] // 2
     y_mean = image.shape[1] // 2
-    return image[x_mean - 200 : x_mean + 200, y_mean - 200 : y_mean + 200]
+    return image[x_mean - size : x_mean + size, y_mean - size : y_mean + size]
 
 
 def find_displacement(
@@ -122,8 +122,8 @@ def find_displacement(
     """Find the displacement of the two pictures."""
 
     cross_corr = correlate2d(
-        binarize(select_center_image(red_mire)),
-        binarize(select_center_image(green_mire)))
+        binarize(select_center_image(red_mire, 100)),
+        binarize(select_center_image(green_mire, 100)))
     
     i, j = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
     delta_x = 1 + i - select_center_image(red_mire).shape[0]
