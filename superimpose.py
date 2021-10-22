@@ -2,6 +2,8 @@
 
 from typing import Tuple, List, NamedTuple
 from statistics import median
+import json
+import os
 
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
@@ -16,10 +18,21 @@ MIRE_PATH = "/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/Image0574
 IM_SIZE = (1024, 1024)
 
 class MireInfo:
-    def __init__(self, middle_line: int, displacement: Tuple[int, int]) -> None:
-        self.middle_line = middle_line
-        self.displacement = displacement
-    
+    def __init__(self, *args) -> None:
+        if len(args) == 2:
+            self.middle_line = args[0]
+            self.displacement = args[1]
+        if len(args) == 1:
+            arg = args[0]
+            if isinstance(arg, dict):
+                self.middle_line = arg["middle_line"]
+                self.displacement = arg["displacement"]
+            if isinstance(arg, str):
+                with open(arg) as f:
+                    data = json.load(f)
+                    self.middle_line = data["middle_line"]
+                    self.displacement = data["displacement"]
+
     def delta_x(self) -> int:
         """Return the displacement in x"""
         return self.displacement[0]
@@ -28,6 +41,11 @@ class MireInfo:
         """Return the displacement in y"""
         return self.displacement[1]
     
+    def save(self, folder: str) -> None:
+        """Save the mire info in a json file."""
+        with open(os.path.join(folder, "mire_info.json"), "w", encoding="utf-8") as outfile:
+            json.dump(self.__dict__, outfile, indent=4)
+
     def __repr__(self) -> str:
         return f"Mire info:\n middle_line: {self.middle_line}\n Displacement: {self.displacement}"
 
@@ -94,8 +112,7 @@ def select_center_image(image: np.ndarray) -> np.ndarray:
     """Return the center part of the image."""
     x_mean = image.shape[0] // 2
     y_mean = image.shape[1] // 2
-    # return image[x_mean - 200 : x_mean + 200, y_mean - 200 : y_mean + 200]
-    return image
+    return image[x_mean - 200 : x_mean + 200, y_mean - 200 : y_mean + 200]
 
 
 def find_displacement(
@@ -159,11 +176,11 @@ def manual_find_displacement(
     red_mire) -> Tuple[int, int]:
     """Manually find the displacement in the image by clicking on a point."""
     fig = plt.figure()
-    plt.imshow(green_mire)
+    plt.imshow(select_center_image(green_mire))
     point_one = plt.ginput(1)[0]
     plt.close(fig)
     fig = plt.figure()
-    plt.imshow(red_mire)
+    plt.imshow(select_center_image(red_mire))
     point_two = plt.ginput(1)[0]
     plt.close(fig)
 
@@ -196,4 +213,5 @@ def superposition(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
 
 
 if __name__ == "__main__":
-    print(mire_analysis(MIRE_PATH, visualization=True))
+    mire_info = mire_analysis(MIRE_PATH, visualization=True)
+    mire_info.save("/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/")
