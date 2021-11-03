@@ -44,6 +44,7 @@ def get_frequencies(signal: List[int], frame_rate: int = constants.FPS ) -> List
 if __name__ == "__main__":
     time, angle = load_data()
     
+    print(np.mean(angle))
     # time = time[1507: 1572]
     # angle = angle[1507: 1572]
 

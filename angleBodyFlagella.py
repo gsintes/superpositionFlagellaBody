@@ -8,10 +8,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage import morphology, measure
 from skimage.filters import gaussian
+from skimage.filters.thresholding import try_all_threshold, threshold_li
 
 import superimpose
 import constants
+from makeTestIm import Ellipse
 
+def li_binarization(image: np.ndarray) -> np.ndarray:
+    """Binarize the image using the li algorithm."""
+    t = threshold_li(image)
+    return 1 * (image > t)
 
 def pca(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Return the main component of the detected region."""
@@ -41,21 +47,40 @@ def make_bin_im(X: np.ndarray, Y: np.ndarray, shape:Tuple[int, int]) -> np.ndarr
     return image
 
 
+def find_main_axis(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
+    """
+    Find the main axis of a set of points using pca.
+    
+    Returns: a, b: coeff of the line : y = a * x + b
+    """
+    vect = pca(x, y)
+    a = vect[1] / vect[0]
+    b = np.mean(y) - a * np.mean(x)
+    return a, b
+
+
+def ellipse_fit(X: np.ndarray, Y: np.ndarray) -> Ellipse:
+    """Return the ellipse fitting better with X and Y."""
+    center = (np.median(X), np.median(Y))
+
+
+
+
 def detect_body(
     green_im: np.ndarray,
     visualization: bool = False) -> Tuple[float, float]:
     """Detect the body in the green image."""
-    
-    
     footprint = morphology.disk(1)
     res = morphology.white_tophat(green_im, footprint)
     res = green_im - res
-    blur = gaussian(res, 2)
-    bin_green = superimpose.binarize(blur)
+    blur = gaussian(res, 2.5)
+   
+    bin_green = li_binarization(blur)
+    # bin_green = blur > np.median(blur)
     x, y = keep_bigger_particle(bin_green)
     bin_green = make_bin_im(x, y, bin_green.shape)
 
-    a1, b1 = np.polyfit(x, y, 1)
+    a, b = find_main_axis(x, y)
     if visualization:
         _, axis =plt.subplots(nrows=1, ncols=3)
         plt.suptitle("Body detection")
@@ -63,14 +88,15 @@ def detect_body(
         axis[0].imshow(green_im, cmap="gray")
         axis[0].set_ylim([green_im.shape[0], 0])
         axis[0].set_xlim([0, green_im.shape[1]])
-        axis[0].plot(a1 * x + b1, x, "-g", linewidth=3)        
+        axis[0].plot(a * x + b, x, "-g", linewidth=1)           
         axis[1].imshow(bin_green, cmap="gray")
         axis[1].set_ylim([green_im.shape[0], 0])
         axis[1].set_xlim([0, green_im.shape[1]])
-        axis[1].plot(a1 * x + b1, x, "-g", linewidth=3)
+        axis[1].plot(a * x + b, x, "-g", linewidth=1)        
 
-    return a1, b1
 
+    return a, b
+    
 def detect_flagella(
     red_im: np.ndarray,
     visualization: bool = False) -> Tuple[float, float]:
@@ -79,32 +105,32 @@ def detect_flagella(
     res = morphology.white_tophat(red_im, footprint)
     res = red_im - res
     blur = gaussian(res, 2)
-    bin_red = superimpose.binarize(blur)
+    bin_red = li_binarization(blur)
     x, y = keep_bigger_particle(bin_red)
     bin_red = make_bin_im(x, y, bin_red.shape)
-    a, b = np.polyfit(x, y, 1)
-    # vect = pca(x, y)
-    # a = vect[1] / vect[0]
-    # b = np.mean(y) - a * np.mean(x)
+
+    vect = pca(x, y)
+    a1 = vect[1] / vect[0]
+    b1 = np.mean(y) - a1 * np.mean(x)
     if visualization:
         _, axis =plt.subplots(1, 3)
         plt.suptitle("Flagella detection")
         axis[0].set_ylim([red_im.shape[0], 0])
         axis[0].set_xlim([0, red_im.shape[1]])
         axis[0].imshow(red_im, cmap="gray")
-        axis[0].plot(a * x + b, x, color="r", linewidth=3)
+        axis[0].plot(a1 * x + b1, x, "-r", linewidth=1)
         axis[1].imshow(bin_red, cmap="gray")
-        axis[1].plot(a * x + b, x, color="r", linewidth=3)
+        axis[1].plot(a1 * x + b1, x, "-r", linewidth=1)
         axis[1].set_ylim([red_im.shape[0], 0])
         axis[1].set_xlim([0, red_im.shape[1]])
-    return a, b
+    return a1, b1
 
 def detect_angle(
     super_imposed: np.ndarray,
     visualization: bool = False) ->  float:
     """Detect the angle between the body and the flagella."""
-    a0, b0 = detect_body(super_imposed[:, :, 1], visualization=False)
-    a1, b1 = detect_flagella(super_imposed[:, :, 0], visualization)
+    a0, b0 = detect_body(super_imposed[:, :, 1], visualization=True)
+    a1, b1 = detect_flagella(super_imposed[:, :, 0], visualization=False)
     x = np.linspace(0, super_imposed.shape[0])
     if visualization:
         
@@ -114,8 +140,10 @@ def detect_angle(
         plt.ylim([super_imposed.shape[0], 0])
         plt.xlim([0, super_imposed.shape[1]])
         plt.draw()
-        plt.pause(0.01)
+        plt.pause(0.001)
+        # input()
         plt.clf()
+        plt.close()
     return np.arctan(a1) - np.arctan(a0)
 
 def save_data(time: List[int], angle: List[float]) -> None:
@@ -144,16 +172,38 @@ def list_angle_detection(
 if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
-    sub_list_images = image_list[1507: 1572]
-    # im_test = mpim.imread(image_list[1507])
-    # im_test = superimpose.superposition(im_test, mire_info)
+
+    im_test = mpim.imread(image_list[1507])
+    im_test = superimpose.select_center_image(superimpose.superposition(im_test, mire_info), 100)
+
+    
     # green_im = im_test[:, :, 1]
+    # plt.figure()
+    # plt.imshow(green_im, cmap="gray")
+    # footprint = morphology.disk(1)
+    # res = morphology.white_tophat(green_im, footprint)
+    # res = green_im - res
+    # blur = gaussian(res, 2)
+    # try_all_threshold(blur, figsize=(10, 8), verbose=False)
 
-    # detect_body(superimpose.select_center_image(green_im, 100), visualization=True)
+    # X = np.arange(0, 200, 1)
+    # Y = np.arange(0, 200, 1)
+    # X, Y = np.meshgrid(X, Y)
+    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"}) 
+    # ax.plot_surface(X, Y, green_im)
+    # plt.title("Raw")
 
-    time, angle = list_angle_detection(image_list[0: 100], visualization=True)    
+    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"}) 
+    # ax.plot_surface(X, Y, gaussian(green_im, 2))
+    # plt.title("Filtered")
+
+    # detect_angle(im_test, visualization=True)
+
+    time, angle = list_angle_detection(image_list, visualization=True)    
     save_data(time, angle)
     plt.close('all')
     plt.figure()
     plt.plot(time, angle, ".")
+    plt.xlabel("Time (in s)")
+    plt.ylabel("Angle (in deg)")
     plt.show(block=True)

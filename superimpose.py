@@ -123,8 +123,8 @@ def find_displacement(
         binarize(select_center_image(green_mire, 100)))
     
     i, j = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
-    delta_x = 1 + i - select_center_image(red_mire).shape[0]
-    delta_y =  1 + j - select_center_image(red_mire).shape[1]
+    delta_x = 1 + i - select_center_image(red_mire, 100).shape[0]
+    delta_y =  1 + j - select_center_image(red_mire, 100).shape[1]
 
     if visualization:
         plt.figure()
@@ -173,11 +173,11 @@ def manual_find_displacement(
     red_mire) -> Tuple[int, int]:
     """Manually find the displacement in the image by clicking on a point."""
     fig = plt.figure()
-    plt.imshow(select_center_image(green_mire))
+    plt.imshow(select_center_image(green_mire, 100))
     point_one = plt.ginput(1)[0]
     plt.close(fig)
     fig = plt.figure()
-    plt.imshow(select_center_image(red_mire))
+    plt.imshow(select_center_image(red_mire, 100))
     point_two = plt.ginput(1)[0]
     plt.close(fig)
 
