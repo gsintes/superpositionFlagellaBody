@@ -19,31 +19,40 @@ def make_square_im(
                     im[i, j] = 1
     return im
 
-def make_ellipse_im(center: Tuple[int, int],
-    im_shape: Tuple[int, int],
+class Ellipse:
+    def __init__(self,
+    center: Tuple[int, int],
     angle: float,
     a: int,
-    b: int)-> np.ndarray:
-    """Make a white ellispe in an image."""
-    x0 = center[0]
-    y0 = center[1]
-    x0p = np.cos(angle) * x0 + np.sin(angle) * y0
-    y0p = - np.sin(angle) * x0 + np.cos(angle) * x0
-    im = np.zeros(im_shape)
-    for x in range(im_shape[0]):
-        for y in range(im_shape[1]):
-            xp = np.cos(angle) * x + np.sin(angle) * y
-            yp = - np.sin(angle) * x + np.cos(angle) * y
-            r = ((xp - x0p) / a) ** 2 + ((yp - y0p) / b) ** 2
-            if r <= 1:
-                im[x, y] = 1
-    return im
+    b: int) -> None:
+        self.center = center
+        self.angle = angle
+        self.a = a
+        self.b = b
+
+    def make_ellipse_im(self,im_shape: Tuple[int, int])-> np.ndarray:
+        """Make a white ellispe in an image."""
+        x0 = self.center[0]
+        y0 = self.center[1]
+        x0p = np.cos(self.angle) * x0 + np.sin(self.angle) * y0
+        y0p = - np.sin(self.angle) * x0 + np.cos(self.angle) * x0
+        im = np.zeros(im_shape)
+        for x in range(im_shape[0]):
+            for y in range(im_shape[1]):
+                xp = np.cos(self.angle) * x + np.sin(self.angle) * y
+                yp = - np.sin(self.angle) * x + np.cos(self.angle) * y
+                r = ((xp - x0p) / self.a) ** 2 + ((yp - y0p) / self.b) ** 2
+                if r <= 1:
+                    im[x, y] = 1
+        return im
+
 
 
 if __name__ == "__main__":
     im_shape = (100, 100)
     square_size = 10
-    image_init = make_ellipse_im((50, 50), im_shape, np.pi / 2, 40, 30)
+    ellipse = Ellipse((50, 50), np.pi / 2, 40, 30)
+    image_init = ellipse.make_ellipse_im(im_shape)
 
     plt.figure()
     plt.imshow(image_init, cmap="gray")
