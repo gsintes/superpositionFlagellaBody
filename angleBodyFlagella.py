@@ -8,16 +8,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage import morphology, measure
 from skimage.filters import gaussian
-from skimage.filters.thresholding import try_all_threshold, threshold_li
+from skimage.filters.thresholding import threshold_li
+from matplotlib.patches import Ellipse
 
 import superimpose
 import constants
-from makeTestIm import Ellipse
+from ellipse import LsqEllipse
 
 def li_binarization(image: np.ndarray) -> np.ndarray:
     """Binarize the image using the li algorithm."""
     t = threshold_li(image)
     return 1 * (image > t)
+
 
 def pca(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Return the main component of the detected region."""
@@ -59,13 +61,6 @@ def find_main_axis(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
     return a, b
 
 
-def ellipse_fit(X: np.ndarray, Y: np.ndarray) -> Ellipse:
-    """Return the ellipse fitting better with X and Y."""
-    center = (np.median(X), np.median(Y))
-
-
-
-
 def detect_body(
     green_im: np.ndarray,
     visualization: bool = False) -> Tuple[float, float]:
@@ -73,38 +68,52 @@ def detect_body(
     footprint = morphology.disk(1)
     res = morphology.white_tophat(green_im, footprint)
     res = green_im - res
-    blur = gaussian(res, 2.5)
+    blur = gaussian(res, 3)
    
     bin_green = li_binarization(blur)
     # bin_green = blur > np.median(blur)
     x, y = keep_bigger_particle(bin_green)
     bin_green = make_bin_im(x, y, bin_green.shape)
+    contour = measure.find_contours(bin_green, 0.4)[0]
 
+    X = np.array(list(zip(contour[:, 0], contour[:, 1])))
+
+    reg = LsqEllipse().fit(X)
+    center, width, height, phi = reg.as_parameters()
+    
     a, b = find_main_axis(x, y)
+
+    a1 = np.tan(phi + np.pi / 2)
+    b1 = center[1] - a1 * center[0]
     if visualization:
+        ellipse = Ellipse(
+            xy=(center[1], center[0]), width=2*width, height=2*height, angle=np.rad2deg(phi - np.pi / 4),
+            edgecolor='b', fc='None', lw=2, label='Fit', zorder=2)
+        ellipse1 = Ellipse(
+            xy=(center[1], center[0]), width=2*width, height=2*height, angle=np.rad2deg(phi - np.pi / 4),
+            edgecolor='b', fc='None', lw=2, label='Fit', zorder=2)
         _, axis =plt.subplots(nrows=1, ncols=3)
         plt.suptitle("Body detection")
         x = np.linspace(0, green_im.shape[0])
         axis[0].imshow(green_im, cmap="gray")
         axis[0].set_ylim([green_im.shape[0], 0])
         axis[0].set_xlim([0, green_im.shape[1]])
-        axis[0].plot(a * x + b, x, "-g", linewidth=1)           
+        axis[0].plot(a * x + b, x, "-g", linewidth=1)  
+        axis[0].plot(a1 * x + b1, x, "-b", linewidth=1)  
+        axis[0].add_patch(ellipse)
         axis[1].imshow(bin_green, cmap="gray")
+        axis[1].add_patch(ellipse1)
         axis[1].set_ylim([green_im.shape[0], 0])
         axis[1].set_xlim([0, green_im.shape[1]])
         axis[1].plot(a * x + b, x, "-g", linewidth=1)        
-
-
+        axis[1].plot(a1 * x + b1, x, "-b", linewidth=1)  
     return a, b
     
 def detect_flagella(
     red_im: np.ndarray,
     visualization: bool = False) -> Tuple[float, float]:
     """Detect the flagella in the red image."""
-    footprint = morphology.disk(1)
-    res = morphology.white_tophat(red_im, footprint)
-    res = red_im - res
-    blur = gaussian(res, 2)
+    blur = gaussian(red_im, 2)
     bin_red = li_binarization(blur)
     x, y = keep_bigger_particle(bin_red)
     bin_red = make_bin_im(x, y, bin_red.shape)
@@ -141,7 +150,6 @@ def detect_angle(
         plt.xlim([0, super_imposed.shape[1]])
         plt.draw()
         plt.pause(0.001)
-        # input()
         plt.clf()
         plt.close()
     return np.arctan(a1) - np.arctan(a0)
@@ -173,18 +181,13 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
-    im_test = mpim.imread(image_list[1507])
+    im_test = mpim.imread(image_list[1508])
     im_test = superimpose.select_center_image(superimpose.superposition(im_test, mire_info), 100)
 
     
-    # green_im = im_test[:, :, 1]
-    # plt.figure()
-    # plt.imshow(green_im, cmap="gray")
-    # footprint = morphology.disk(1)
-    # res = morphology.white_tophat(green_im, footprint)
-    # res = green_im - res
-    # blur = gaussian(res, 2)
-    # try_all_threshold(blur, figsize=(10, 8), verbose=False)
+    green_im = im_test[:, :, 1]
+    
+    # detect_body(green_im, True)
 
     # X = np.arange(0, 200, 1)
     # Y = np.arange(0, 200, 1)
@@ -200,10 +203,10 @@ if __name__ == "__main__":
     # detect_angle(im_test, visualization=True)
 
     time, angle = list_angle_detection(image_list, visualization=True)    
-    save_data(time, angle)
-    plt.close('all')
-    plt.figure()
-    plt.plot(time, angle, ".")
-    plt.xlabel("Time (in s)")
-    plt.ylabel("Angle (in deg)")
+    # save_data(time, angle)
+    # plt.close('all')
+    # plt.figure()
+    # plt.plot(time, angle, ".")
+    # plt.xlabel("Time (in s)")
+    # plt.ylabel("Angle (in deg)")
     plt.show(block=True)

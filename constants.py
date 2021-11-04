@@ -1,6 +1,6 @@
 """Define the useful constants."""
 
-FOLDER = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING/2020-11-05_13h28m41s"
+FOLDER = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING/2020-11-05_13h15m43s"
 IM_SIZE = (1024, 1024)
 FPS = 80
 
