@@ -23,7 +23,6 @@ def li_binarization(image: np.ndarray) -> np.ndarray:
 
 def pca(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Return the main component of the detected region."""
-
     M = np.cov(X, Y)
     val, vect = np.linalg.eig(M)
     val = list(val)
@@ -71,7 +70,6 @@ def detect_body(
     blur = gaussian(res, 3)
    
     bin_green = li_binarization(blur)
-    # bin_green = blur > np.median(blur)
     x, y = keep_bigger_particle(bin_green)
     bin_green = make_bin_im(x, y, bin_green.shape)
     contour = measure.find_contours(bin_green, 0.4)[0]
@@ -85,6 +83,7 @@ def detect_body(
 
     a1 = np.tan(phi + np.pi / 2)
     b1 = center[1] - a1 * center[0]
+
     if visualization:
         ellipse = Ellipse(
             xy=(center[1], center[0]), width=2*width, height=2*height, angle=np.rad2deg(phi - np.pi / 4),
@@ -92,6 +91,7 @@ def detect_body(
         ellipse1 = Ellipse(
             xy=(center[1], center[0]), width=2*width, height=2*height, angle=np.rad2deg(phi - np.pi / 4),
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2)
+
         _, axis =plt.subplots(nrows=1, ncols=3)
         plt.suptitle("Body detection")
         x = np.linspace(0, green_im.shape[0])
@@ -149,14 +149,14 @@ def detect_angle(
         plt.ylim([super_imposed.shape[0], 0])
         plt.xlim([0, super_imposed.shape[1]])
         plt.draw()
-        plt.pause(0.001)
+        plt.pause(0.01)
         plt.clf()
         plt.close()
     return np.arctan(a1) - np.arctan(a0)
 
 def save_data(time: List[int], angle: List[float]) -> None:
     """Save the data to a text file."""
-    textfile = open(os.path.join(constants.FOLDER, "angle.csv"), "w")
+    textfile = open(os.path.join(constants.FOLDER, "angle_body_flagella.csv"), "w")
     for i in range(len(time)):
         textfile.write(f"{time[i]}, {angle[i]}\n")
     textfile.close()
