@@ -49,10 +49,17 @@ def calculate_velocities(data: pd.DataFrame) -> pd.DataFrame:
         if i % 2 == 0:
             data["vel_z"][i] = data["vel_z"][i - 1]
     data["vel"] = np.sqrt(data["vel_x"] ** 2 + data["vel_y"] ** 2 + data["vel_z"] ** 2)
-    
+    data["slope"] = data["vel_y"] / data["vel_x"]
+    data["b_coeff"] = data["center_y"] - data["center_x"] * data["slope"]
     return data
 
+def load_track_data(
+    folder: str = constants.FOLDER,
+    file: str = constants.TRACK_FILE) -> pd.DataFrame:
+    """Load, parse and calculate velocities from track data."""
+    data = parser_track(folder, file)
+    return calculate_velocities(data)
+
 if __name__ == "__main__":
-    data = parser_track()
-    print(calculate_velocities(data))
+    print(load_track_data())
 
