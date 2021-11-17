@@ -1,12 +1,16 @@
-"""Anlayse the angle between the velocity vector and the flagella."""
+"""Parse the track data."""
 
 import os
 import re
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 import constants
+from superimpose import MireInfo
+
 
 def parser_track(
     folder: str = constants.FOLDER,
@@ -37,29 +41,58 @@ def parser_track(
     data["center_y"] = center_y
     return data
 
+
+def smooth_trajectory(data: pd.DataFrame, window_size:int) -> pd.DataFrame:
+    """Smooth the trajectories."""
+    data["smooth_x"] = data['x'].rolling(window=window_size).mean()
+    data["smooth_y"] = data['y'].rolling(window=window_size).mean()
+    data["smooth_z"] = data['z'].rolling(window=window_size).mean()
+    return data
+
+
+def smooth_derivative(vector: Iterable, step_size: float) -> Iterable:
+    """Does a smooth derivative of the data."""
+    derivative = [0, 0]
+    for i in range(2, len(vector) - 2):
+        der = (2 * (vector[i + 1] - vector[i - 1]) + vector[i +2] - vector[i - 2]) / (8 * step_size)
+        derivative.append(der)
+    derivative.append(0)
+    derivative.append(0)
+    return np.array(derivative)
+
+
 def calculate_velocities(data: pd.DataFrame) -> pd.DataFrame:
     """Calculate the velocities and add them to a new dataframe."""
-    data["vel_x"] = 1000 * data["x"].diff() / constants.FPS
-    data["vel_x"][0] = 0
-    data["vel_y"] = 1000 * data["y"].diff() / constants.FPS
-    data["vel_y"][0] = 0
-    data["vel_z"] = 1000 * data["z"].diff() / constants.FPS
-    data["vel_z"][0] = 0
-    for i in range(1, len(data["vel_z"])):
-        if i % 2 == 0:
-            data["vel_z"][i] = data["vel_z"][i - 1]
+    data["vel_x"] = 1000 * smooth_derivative(data["smooth_x"], constants.FPS)
+    data["vel_y"] = 1000 * smooth_derivative(data["smooth_y"], constants.FPS)
+    data["vel_z"] = 1000 * smooth_derivative(data["smooth_x"], constants.FPS)
+
     data["vel"] = np.sqrt(data["vel_x"] ** 2 + data["vel_y"] ** 2 + data["vel_z"] ** 2)
-    data["slope"] = data["vel_y"] / data["vel_x"]
-    data["b_coeff"] = data["center_y"] - data["center_x"] * data["slope"]
+    data["slope"] = - data["vel_x"] / data["vel_y"]
+    mire_info = MireInfo(constants.MIRE_INFO_PATH)
+    
+    shift = - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) / 2 + 100
+    data["b_coeff"] = - ( data["center_y"] + shift + mire_info.displacement[1]) * data["slope"] +\
+         (data["center_x"] + mire_info.displacement[0]- (constants.IM_SIZE[1] / 2) + 100)
     return data
+
 
 def load_track_data(
     folder: str = constants.FOLDER,
     file: str = constants.TRACK_FILE) -> pd.DataFrame:
     """Load, parse and calculate velocities from track data."""
     data = parser_track(folder, file)
+    data = smooth_trajectory(data, 20)
     return calculate_velocities(data)
 
-if __name__ == "__main__":
-    print(load_track_data())
 
+if __name__ == "__main__":
+    data = load_track_data()
+
+    print(data.describe())
+
+    data.plot("time", "slope")
+    data.plot("time", ["vel_x", "vel_y", "vel_z", "vel"])
+    data.plot("time", ["x", "y", "z"])
+    data.plot("time", ["center_x", "center_y"])
+    plt.show(block=True)
