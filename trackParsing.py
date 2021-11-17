@@ -82,7 +82,7 @@ def load_track_data(
     file: str = constants.TRACK_FILE) -> pd.DataFrame:
     """Load, parse and calculate velocities from track data."""
     data = parser_track(folder, file)
-    data = smooth_trajectory(data, 20)
+    data = smooth_trajectory(data, 40)
     return calculate_velocities(data)
 
 
@@ -93,6 +93,6 @@ if __name__ == "__main__":
 
     data.plot("time", "slope")
     data.plot("time", ["vel_x", "vel_y", "vel_z", "vel"])
-    data.plot("time", ["x", "y", "z"])
+    data.plot("time", ["smooth_x", "smooth_y", "smooth_z"])
     data.plot("time", ["center_x", "center_y"])
     plt.show(block=True)

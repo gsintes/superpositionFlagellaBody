@@ -161,7 +161,6 @@ def super_impose_two_im(
     displacement: Tuple[int,int]) -> np.ndarray:
     """Super impose the green and red part."""
     shift_red = shift_image(red_im, displacement)
-    # shift_red = red_im
     super_imposed = np.array([shift_red.transpose(),
      green_im.transpose(),
      np.zeros(green_im.shape).transpose()])
@@ -202,6 +201,7 @@ def mire_analysis(mire_path: str, visualization: bool = False) -> MireInfo:
         plt.show(block=True)
     res = MireInfo(middle_line, displacement)
     return res
+
 
 def superposition(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
     """Superimpose the two colors according to the info of the mire."""

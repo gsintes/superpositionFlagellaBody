@@ -15,6 +15,7 @@ import superimpose
 import constants
 from ellipse import LsqEllipse
 
+
 def li_binarization(image: np.ndarray) -> np.ndarray:
     """Binarize the image using the li algorithm."""
     t = threshold_li(image)
@@ -108,6 +109,7 @@ def detect_body(
         axis[1].plot(a * x + b, x, "-g", linewidth=1)        
         axis[1].plot(a1 * x + b1, x, "-b", linewidth=1)  
     return a, b
+
     
 def detect_flagella(
     red_im: np.ndarray,
@@ -132,14 +134,15 @@ def detect_flagella(
         axis[1].plot(a1 * x + b1, x, "-r", linewidth=1)
         axis[1].set_ylim([red_im.shape[0], 0])
         axis[1].set_xlim([0, red_im.shape[1]])
-    return a1, b1
+    return a1, b1, vect
+
 
 def detect_angle(
     super_imposed: np.ndarray,
     visualization: bool = False) ->  float:
     """Detect the angle between the body and the flagella."""
     a0, b0 = detect_body(super_imposed[:, :, 1], visualization=True)
-    a1, b1 = detect_flagella(super_imposed[:, :, 0], visualization=False)
+    a1, b1, _ = detect_flagella(super_imposed[:, :, 0], visualization=False)
     x = np.linspace(0, super_imposed.shape[0])
     if visualization:
         
@@ -154,12 +157,14 @@ def detect_angle(
         plt.close()
     return np.arctan(a1) - np.arctan(a0)
 
+
 def save_data(time: List[int], angle: List[float]) -> None:
     """Save the data to a text file."""
     textfile = open(os.path.join(constants.FOLDER, "angle_body_flagella.csv"), "w")
     for i in range(len(time)):
         textfile.write(f"{time[i]}, {angle[i]}\n")
     textfile.close()
+
 
 def list_angle_detection(
     image_list: List[str],
@@ -203,7 +208,7 @@ if __name__ == "__main__":
     # detect_angle(im_test, visualization=True)
 
     time, angle = list_angle_detection(image_list, visualization=True)    
-    # save_data(time, angle)
+    save_data(time, angle)
     # plt.close('all')
     # plt.figure()
     # plt.plot(time, angle, ".")
