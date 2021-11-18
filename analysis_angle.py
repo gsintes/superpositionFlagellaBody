@@ -1,4 +1,4 @@
-"""Data analysis for the angle."""
+"""Data analysis for the angle between body and flagella."""
 
 import os
 from typing import List, Tuple

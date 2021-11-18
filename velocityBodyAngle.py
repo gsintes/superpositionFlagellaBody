@@ -28,7 +28,12 @@ def detect_angle(
     a1, b1, vect = detect_flagella(super_imposed[:, :, 0], visualization=False)
     x = np.linspace(0, super_imposed.shape[0])
     scalar_prod = (vect[0] * vel_x) + (vect[1] * vel_y)
-    theta = np.arccos(scalar_prod / (vel_y ** 2 + vel_x ** 2) ** (1/2))
+    norm_vel = (vel_y ** 2 + vel_x ** 2) ** (1/2)
+    if norm_vel > 0:
+        theta = np.arccos(scalar_prod / norm_vel) - 3 * np.pi / 4
+    else:
+        theta = 0
+        
     if visualization:
         plt.imshow(super_imposed)
         plt.plot(a0 * x + b0, x, "-b", linewidth=3)

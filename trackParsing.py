@@ -82,7 +82,7 @@ def load_track_data(
     file: str = constants.TRACK_FILE) -> pd.DataFrame:
     """Load, parse and calculate velocities from track data."""
     data = parser_track(folder, file)
-    data = smooth_trajectory(data, 40)
+    data = smooth_trajectory(data, 10)
     return calculate_velocities(data)
 
 
