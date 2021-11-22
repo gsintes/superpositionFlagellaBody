@@ -83,7 +83,7 @@ if __name__ == "__main__":
     track_data = load_track_data()
     image_list = image_list[:track_data.shape[0]]
 
-    time, angle = list_angle_detection(track_data, image_list, visualization=False)
+    time, angle = list_angle_detection(track_data, image_list, visualization=True)
     save_data(time, angle)
     
     plt.figure()
