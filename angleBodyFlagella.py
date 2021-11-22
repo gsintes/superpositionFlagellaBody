@@ -14,6 +14,7 @@ from matplotlib.patches import Ellipse
 import superimpose
 import constants
 from ellipse import LsqEllipse
+from trackParsing import smooth_derivative
 
 
 def li_binarization(image: np.ndarray) -> np.ndarray:
@@ -68,7 +69,9 @@ def detect_body(
     footprint = morphology.disk(1)
     res = morphology.white_tophat(green_im, footprint)
     res = green_im - res
-    blur = gaussian(res, 3)
+    blur = gaussian(res, 2)
+    # blur = res
+
    
     bin_green = li_binarization(blur)
     x, y = keep_bigger_particle(bin_green)
@@ -82,17 +85,7 @@ def detect_body(
     
     a, b = find_main_axis(x, y)
 
-    a1 = np.tan(phi + np.pi / 2)
-    b1 = center[1] - a1 * center[0]
-
     if visualization:
-        ellipse = Ellipse(
-            xy=(center[1], center[0]), width=2*width, height=2*height, angle=np.rad2deg(phi - np.pi / 4),
-            edgecolor='b', fc='None', lw=2, label='Fit', zorder=2)
-        ellipse1 = Ellipse(
-            xy=(center[1], center[0]), width=2*width, height=2*height, angle=np.rad2deg(phi - np.pi / 4),
-            edgecolor='b', fc='None', lw=2, label='Fit', zorder=2)
-
         _, axis =plt.subplots(nrows=1, ncols=3)
         plt.suptitle("Body detection")
         x = np.linspace(0, green_im.shape[0])
@@ -100,14 +93,10 @@ def detect_body(
         axis[0].set_ylim([green_im.shape[0], 0])
         axis[0].set_xlim([0, green_im.shape[1]])
         axis[0].plot(a * x + b, x, "-g", linewidth=1)  
-        axis[0].plot(a1 * x + b1, x, "-b", linewidth=1)  
-        axis[0].add_patch(ellipse)
         axis[1].imshow(bin_green, cmap="gray")
-        axis[1].add_patch(ellipse1)
         axis[1].set_ylim([green_im.shape[0], 0])
         axis[1].set_xlim([0, green_im.shape[1]])
         axis[1].plot(a * x + b, x, "-g", linewidth=1)        
-        axis[1].plot(a1 * x + b1, x, "-b", linewidth=1)  
     return a, b
 
     
@@ -152,11 +141,27 @@ def detect_angle(
         plt.ylim([super_imposed.shape[0], 0])
         plt.xlim([0, super_imposed.shape[1]])
         plt.draw()
-        plt.pause(0.01)
+        plt.pause(0.001)
         plt.clf()
         plt.close()
     return np.arctan(a1) - np.arctan(a0)
 
+
+def smooth_green(image_list: List[str], i:int, window_size: int) -> np.ndarray:
+    """Does a trailing mean on the red image, return the super imposed image."""
+    if i < window_size:
+        window_size = i
+    stored = []
+    for im_path in image_list[i - window_size : i + 1]:
+        im_test = mpim.imread(im_path) 
+        im_test = im_test / np.amax(im_test)
+        super_imposed = superimpose.superposition(im_test, mire_info)
+        stored.append(superimpose.select_center_image(super_imposed, 100))
+    im = stored[len(stored) - 1]
+    for k in range(im.shape[0]):
+        for l in range(im.shape[1]):
+            im[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
+    return im
 
 def save_data(time: List[int], angle: List[float]) -> None:
     """Save the data to a text file."""
@@ -172,11 +177,8 @@ def list_angle_detection(
     """Run the angle detection on a list of path and return angle and time."""
     angle = []
     time = []
-    for i, im_path in enumerate(image_list):
-        im_test = mpim.imread(im_path) 
-        im_test = im_test / np.amax(im_test)
-        super_imposed = superimpose.superposition(im_test, mire_info)
-        super_imposed = superimpose.select_center_image(super_imposed, 100)
+    for i, _ in enumerate(image_list):
+        super_imposed = smooth_green(image_list, i, window_size=20)
         time.append(i / constants.FPS)
         angle.append(180 * detect_angle(super_imposed, visualization) / np.pi)
     return time, angle
@@ -186,12 +188,14 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
-    im_test = mpim.imread(image_list[1508])
-    im_test = superimpose.select_center_image(superimpose.superposition(im_test, mire_info), 100)
+    # im_test = mpim.imread(image_list[100])
+    # im_test = im_test / np.amax(im_test)
+    # im_test = superimpose.select_center_image(superimpose.superposition(im_test, mire_info), 100)
+    # _, ax =plt.subplots(2)
+    # ax[0].imshow(im_test[:,:, 1], cmap="gray")
+    # ax[1].imshow(smooth_green(image_list, 100, 20)[:,:,1], cmap="gray")
+    
 
-    
-    green_im = im_test[:, :, 1]
-    
     # detect_body(green_im, True)
 
     # X = np.arange(0, 200, 1)
