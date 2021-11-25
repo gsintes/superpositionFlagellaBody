@@ -2,6 +2,7 @@
 
 import os
 from typing import Tuple, List
+import time
 
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
@@ -9,13 +10,20 @@ import numpy as np
 from skimage import morphology, measure
 from skimage.filters import gaussian
 from skimage.filters.thresholding import threshold_li
-from matplotlib.patches import Ellipse
 
 import superimpose
 import constants
-from ellipse import LsqEllipse
-from trackParsing import smooth_derivative
+from trackParsing import load_track_data
 
+def timit(func):
+    """Timing decorator."""
+    def wrapper(*arg, **kw):
+        t1 = time.time()
+        res = func(*arg, **kw)
+        t2 = time.time()
+        print(t2 - t1)
+        return res
+    return wrapper
 
 def li_binarization(image: np.ndarray) -> np.ndarray:
     """Binarize the image using the li algorithm."""
@@ -69,7 +77,7 @@ def detect_body(
     footprint = morphology.disk(1)
     res = morphology.white_tophat(green_im, footprint)
     res = green_im - res
-    blur = gaussian(res, 2)
+    blur = gaussian(res, 3)
     # blur = res
 
    
@@ -80,11 +88,9 @@ def detect_body(
 
     X = np.array(list(zip(contour[:, 0], contour[:, 1])))
 
-    reg = LsqEllipse().fit(X)
-    center, width, height, phi = reg.as_parameters()
-    
-    a, b = find_main_axis(x, y)
-
+    vect = pca(x, y)
+    a = vect[1] / vect[0]
+    b = np.mean(y) - a * np.mean(x)
     if visualization:
         _, axis =plt.subplots(nrows=1, ncols=3)
         plt.suptitle("Body detection")
@@ -97,7 +103,7 @@ def detect_body(
         axis[1].set_ylim([green_im.shape[0], 0])
         axis[1].set_xlim([0, green_im.shape[1]])
         axis[1].plot(a * x + b, x, "-g", linewidth=1)        
-    return a, b
+    return a, b, vect
 
     
 def detect_flagella(
@@ -130,9 +136,10 @@ def detect_angle(
     super_imposed: np.ndarray,
     visualization: bool = False) ->  float:
     """Detect the angle between the body and the flagella."""
-    a0, b0 = detect_body(super_imposed[:, :, 1], visualization=True)
-    a1, b1, _ = detect_flagella(super_imposed[:, :, 0], visualization=False)
+    a0, b0, vect_body = detect_body(super_imposed[:, :, 1], visualization=visualization)
+    a1, b1, vect_flagella = detect_flagella(super_imposed[:, :, 0], visualization=False)
     x = np.linspace(0, super_imposed.shape[0])
+    ps = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
     if visualization:
         
         plt.imshow(super_imposed)
@@ -143,25 +150,9 @@ def detect_angle(
         plt.draw()
         plt.pause(0.001)
         plt.clf()
-        plt.close()
-    return np.arctan(a1) - np.arctan(a0)
+        plt.close() 
+    return np.arccos(ps)
 
-
-def smooth_green(image_list: List[str], i:int, window_size: int) -> np.ndarray:
-    """Does a trailing mean on the red image, return the super imposed image."""
-    if i < window_size:
-        window_size = i
-    stored = []
-    for im_path in image_list[i - window_size : i + 1]:
-        im_test = mpim.imread(im_path) 
-        im_test = im_test / np.amax(im_test)
-        super_imposed = superimpose.superposition(im_test, mire_info)
-        stored.append(superimpose.select_center_image(super_imposed, 100))
-    im = stored[len(stored) - 1]
-    for k in range(im.shape[0]):
-        for l in range(im.shape[1]):
-            im[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
-    return im
 
 def save_data(time: List[int], angle: List[float]) -> None:
     """Save the data to a text file."""
@@ -173,49 +164,44 @@ def save_data(time: List[int], angle: List[float]) -> None:
 
 def list_angle_detection(
     image_list: List[str],
+    window_size: int,
     visualization: bool = False) -> Tuple[List[float], List[float]]:
     """Run the angle detection on a list of path and return angle and time."""
+    track_data = load_track_data()
+    shift_y = - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2
+    shift_x =  mire_info.displacement[0] - (constants.IM_SIZE[1] // 2)
     angle = []
-    time = []
-    for i, _ in enumerate(image_list):
-        super_imposed = smooth_green(image_list, i, window_size=20)
-        time.append(i / constants.FPS)
+    times = []
+    stored = []
+    for i, im_path in enumerate(image_list):
+        t1 = time.time()
+        im_test = mpim.imread(im_path) 
+        im_test = im_test / 2 ** 16
+        delta_x = int(track_data["center_x"][i]) + shift_x
+        delta_y = int(track_data["center_y"][i]) + shift_y 
+        super_imposed = superimpose.shift_image(superimpose.superposition(im_test, mire_info),(-delta_x, -delta_y))
+        super_imposed = superimpose.select_center_image(super_imposed, 100) 
+        
+        stored.append(super_imposed.copy())
+        if i >= window_size:
+            stored.pop(0)
+        for k in range(super_imposed.shape[0]):
+            for l in range(super_imposed.shape[1]):
+                super_imposed[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
+        t3 = time.time()
+
+        times.append(i / constants.FPS)
         angle.append(180 * detect_angle(super_imposed, visualization) / np.pi)
-    return time, angle
+        t2 = time.time()
+        print(t2 - t1)
+    return times, angle
 
 
 if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
-    # im_test = mpim.imread(image_list[100])
-    # im_test = im_test / np.amax(im_test)
-    # im_test = superimpose.select_center_image(superimpose.superposition(im_test, mire_info), 100)
-    # _, ax =plt.subplots(2)
-    # ax[0].imshow(im_test[:,:, 1], cmap="gray")
-    # ax[1].imshow(smooth_green(image_list, 100, 20)[:,:,1], cmap="gray")
-    
-
-    # detect_body(green_im, True)
-
-    # X = np.arange(0, 200, 1)
-    # Y = np.arange(0, 200, 1)
-    # X, Y = np.meshgrid(X, Y)
-    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"}) 
-    # ax.plot_surface(X, Y, green_im)
-    # plt.title("Raw")
-
-    # fig, ax = plt.subplots(subplot_kw={"projection": "3d"}) 
-    # ax.plot_surface(X, Y, gaussian(green_im, 2))
-    # plt.title("Filtered")
-
-    # detect_angle(im_test, visualization=True)
-
-    time, angle = list_angle_detection(image_list, visualization=True)    
-    save_data(time, angle)
-    # plt.close('all')
-    # plt.figure()
-    # plt.plot(time, angle, ".")
-    # plt.xlabel("Time (in s)")
-    # plt.ylabel("Angle (in deg)")
+    times, angle = list_angle_detection(image_list, window_size=20, visualization=True)    
+    save_data(times, angle)
+    plt.close('all')
     plt.show(block=True)

@@ -109,8 +109,9 @@ def select_center_image(image: np.ndarray, size: int) -> np.ndarray:
     """Return the center part of the image."""
     x_mean = image.shape[0] // 2
     y_mean = image.shape[1] // 2
-    return image[x_mean - size : x_mean + size, y_mean - size : y_mean + size]
-
+    if len(image.shape) == 2:
+        return image[x_mean - size : x_mean + size, y_mean - size : y_mean + size]
+    return image[x_mean - size : x_mean + size, y_mean - size : y_mean + size, :]
 
 def find_displacement(
     green_mire: np.ndarray,
@@ -137,22 +138,31 @@ def shift_image(
     image: np.ndarray,
     displacement: Tuple[int, int]) -> np.ndarray:
     """Shift the image and fill boundaries with black."""
-    delta_x = displacement[0]
-    delta_y = displacement[1]
-    if delta_x > 0:
-        image = image[delta_x:, :]
-        image = np.concatenate((image, np.zeros((delta_x, image.shape[1]))), axis=0)
-    if delta_x < 0:
-        image = image[:delta_x, :]
-        image = np.concatenate((np.zeros((-delta_x, image.shape[1])), image), axis=0)
+    #TODO make it possible for 3d
+    if len(image.shape) == 3:
+        shifted = image.copy()
+        for i in range(3):
+            shifted[:, :, i] = shift_image(image[:, :, i], displacement)
+        return shifted
+    elif len(image.shape) == 2:
+        delta_x = displacement[0]
+        delta_y = displacement[1]
+        if delta_x > 0:
+            image = image[delta_x:, :]
+            image = np.concatenate((image, np.zeros((delta_x, image.shape[1]))), axis=0)
+        if delta_x < 0:
+            image = image[:delta_x, :]
+            image = np.concatenate((np.zeros((-delta_x, image.shape[1])), image), axis=0)
 
-    if delta_y < 0: 
-        image = image[:, :delta_y]
-        image = np.concatenate((np.zeros((image.shape[0], -delta_y, )), image), axis=1)
-    if delta_y > 0:
-        image = image[:, delta_y:]
-        image = np.concatenate((image, np.zeros((image.shape[0], delta_y))), axis=1)
-    return image
+        if delta_y < 0: 
+            image = image[:, :delta_y]
+            image = np.concatenate((np.zeros((image.shape[0], -delta_y, )), image), axis=1)
+        if delta_y > 0:
+            image = image[:, delta_y:]
+            image = np.concatenate((image, np.zeros((image.shape[0], delta_y))), axis=1)
+        return image
+    else:
+        raise IndexError("Not the good dimension.")
 
 
 def super_impose_two_im(
@@ -188,7 +198,7 @@ def manual_find_displacement(
 def mire_analysis(mire_path: str, visualization: bool = False) -> MireInfo:
     """Perform the mire analysis"""
     mire_im = mpim.imread(mire_path) 
-    mire_im = mire_im / np.amax(mire_im)
+    mire_im = mire_im / 2 ** 16
     middle_line = find_separation(mire_im, visualization)
     red_mire, green_mire = split_image(mire_im, middle_line)
 
