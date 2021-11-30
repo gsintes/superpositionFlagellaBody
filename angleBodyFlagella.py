@@ -154,14 +154,19 @@ def detect_angle(
     super_imposed: np.ndarray,
     visualization: bool = False) ->  float:
     """Detect the angle between the body and the flagella."""
-    a0, b0, vect_body = detect_body(super_imposed[:, :, 1], visualization=visualization)
-    a1, b1, vect_flagella = detect_flagella(super_imposed[:, :, 0], visualization=False)
+    try:
+        a0, b0, vect_body = detect_body(super_imposed[:, :, 1], visualization=visualization)
+        a1, b1, vect_flagella = detect_flagella(super_imposed[:, :, 0], visualization=False)
+    except NoCenteredParticle:
+        raise
     x = np.linspace(0, super_imposed.shape[0])
     ps = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
     if visualization:
-        plt.imshow(super_imposed * 2 ** 8)
-        plt.plot(a0 * x + b0, x, "-g", linewidth=3)
-        plt.plot(a1 * x + b1, x, "-r", linewidth=3)
+        super_imposed[:, :, 0] = superimpose.contrast_enhancement(super_imposed[:, :, 0])
+        super_imposed[:, :, 1] = superimpose.contrast_enhancement(super_imposed[:, :, 1])
+        plt.imshow(super_imposed)
+        plt.plot(a0 * x + b0, x, "-g", linewidth=1)
+        plt.plot(a1 * x + b1, x, "-r", linewidth=1)
         plt.ylim([super_imposed.shape[0], 0])
         plt.xlim([0, super_imposed.shape[1]])
         plt.draw()
@@ -204,9 +209,11 @@ def list_angle_detection(
         for k in range(super_imposed.shape[0]):
             for l in range(super_imposed.shape[1]):
                 super_imposed[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
-
-        times.append(i / constants.FPS)
-        angle.append(180 * detect_angle(super_imposed, visualization) / np.pi)
+        try:
+            times.append(i / constants.FPS)
+            angle.append(180 * detect_angle(super_imposed, visualization) / np.pi)
+        except NoCenteredParticle as e:
+            print("No body found in the center.")
         t2 = time.time()
     return times, angle
 
@@ -215,7 +222,7 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
-    times, angle = list_angle_detection(image_list, window_size=20, visualization=True)    
+    times, angle = list_angle_detection(image_list, window_size=20, visualization=False)    
     save_data(times, angle)
     plt.close('all')
     plt.show(block=True)

@@ -49,6 +49,13 @@ class MireInfo:
         return f"Mire info:\n middle_line: {self.middle_line}\n Displacement: {self.displacement}"
 
 
+def contrast_enhancement(image: np.ndarray) -> np.ndarray:
+    """Enhance the contrast of the image."""
+    p2, p98 = np.percentile(image, (1, 99))
+    img_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))
+    return img_rescale
+
+
 def moving_average(array: np.ndarray, averaging_length: int) -> np.ndarray:
     """Does a moving average of array with a given averaging length."""
     return np.convolve(array, np.ones(averaging_length), "valid") / averaging_length
