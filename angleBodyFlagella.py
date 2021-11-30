@@ -15,6 +15,11 @@ import superimpose
 import constants
 from trackParsing import load_track_data
 
+
+class NoCenteredParticle(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
 def timit(func):
     """Timing decorator."""
     def wrapper(*arg, **kw):
@@ -40,15 +45,30 @@ def pca(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     return vect[:, i]
 
 
-def keep_bigger_particle(bin_image: np.ndarray):
-    """Keep only the bigger particle in the image."""
+def keep_bigger_particle(bin_image: np.ndarray, center: bool):
+    """Keep only the bigger particle in the image if it is close to the center."""
     labeled = measure.label(bin_image)
-    props = measure.regionprops_table(labeled, properties=("area", "coords"))
-    coords = props["coords"][list(props["area"]).index(max(props["area"]))]
-    
+    props = measure.regionprops_table(labeled, properties=("area", "coords","centroid"))
+    ok = False
+    areas = list(props["area"])
+    ind_max = areas.index(max(areas))
+    if center:
+        i = 0
+        while not ok and i < len(areas) + 1:
+            ind_max = areas.index(max(areas))
+            centroid = (props["centroid-0"][ind_max], props["centroid-1"][ind_max])
+            print(centroid)
+            ok = (120 > centroid[0] > 80) and (120 > centroid[1] > 80)
+            if not ok:
+                areas[ind_max] = 0
+            i += 1
+        if i == len(areas) + 1:
+            raise NoCenteredParticle
+    centroid = (props["centroid-0"][ind_max], props["centroid-1"][ind_max])
+    coords = props["coords"][ind_max]
     x = coords[:, 0]
     y = coords[:, 1]
-    return x, y
+    return x, y, centroid
 
 
 def make_bin_im(X: np.ndarray, Y: np.ndarray, shape:Tuple[int, int]) -> np.ndarray:
@@ -77,12 +97,10 @@ def detect_body(
     footprint = morphology.disk(1)
     res = morphology.white_tophat(green_im, footprint)
     res = green_im - res
-    blur = gaussian(res, 3)
-    # blur = res
-
+    blur = gaussian(res, 1)
    
     bin_green = li_binarization(blur)
-    x, y = keep_bigger_particle(bin_green)
+    x, y, centroid = keep_bigger_particle(bin_green, center=True)
     bin_green = make_bin_im(x, y, bin_green.shape)
     contour = measure.find_contours(bin_green, 0.4)[0]
 
@@ -96,6 +114,7 @@ def detect_body(
         plt.suptitle("Body detection")
         x = np.linspace(0, green_im.shape[0])
         axis[0].imshow(green_im, cmap="gray")
+        axis[0].plot(centroid[1], centroid[0], "sr")
         axis[0].set_ylim([green_im.shape[0], 0])
         axis[0].set_xlim([0, green_im.shape[1]])
         axis[0].plot(a * x + b, x, "-g", linewidth=1)  
@@ -112,7 +131,7 @@ def detect_flagella(
     """Detect the flagella in the red image."""
     blur = gaussian(red_im, 2)
     bin_red = li_binarization(blur)
-    x, y = keep_bigger_particle(bin_red)
+    x, y, _ = keep_bigger_particle(bin_red, center=False)
     bin_red = make_bin_im(x, y, bin_red.shape)
 
     vect = pca(x, y)
@@ -173,12 +192,12 @@ def list_angle_detection(
     angle = []
     times = []
     stored = []
-    for i, im_path in enumerate(image_list):
-        t1 = time.time()
+    for i, im_path in enumerate(image_list[:len(track_data)]):
         im_test = mpim.imread(im_path) 
         im_test = im_test / 2 ** 16
         delta_x = int(track_data["center_x"][i]) + shift_x
         delta_y = int(track_data["center_y"][i]) + shift_y 
+        # print(delta_x, delta_y)
         super_imposed = superimpose.shift_image(superimpose.superposition(im_test, mire_info),(-delta_x, -delta_y))
         super_imposed = superimpose.select_center_image(super_imposed, 100) 
         
@@ -188,12 +207,10 @@ def list_angle_detection(
         for k in range(super_imposed.shape[0]):
             for l in range(super_imposed.shape[1]):
                 super_imposed[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
-        t3 = time.time()
 
         times.append(i / constants.FPS)
         angle.append(180 * detect_angle(super_imposed, visualization) / np.pi)
         t2 = time.time()
-        print(t2 - t1)
     return times, angle
 
 
