@@ -89,8 +89,11 @@ def load_track_data(
 if __name__ == "__main__":
     data = load_track_data()
 
-    data.plot("time", ["vel_x", "vel_y", "vel_z", "vel"])
-    data.plot("time", "x")
-    data.plot("time", "smooth_x")
-    data.plot("time", "center_x")
+    data.plot("time", ["vel_x", "vel_y"])
+    # data.plot("time", "x")
+    data.plot("time", "y")
+    folder = constants.FOLDER.split("/")[-1]
+    data.plot("time", ["center_x", "center_y"])
+    # plt.savefig(f"/Users/sintes/Desktop/yTracking/{folder}")
+    data.plot("time", "smooth_y")
     plt.show(block=True)

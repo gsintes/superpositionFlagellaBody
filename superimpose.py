@@ -77,13 +77,6 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
     return int(separation)
 
 
-def contrast_enhancement(image: np.ndarray) -> np.ndarray:
-    """Enhance the contrast of the image."""
-    p2, p98 = np.percentile(image, (2, 98))
-    img_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))
-    return img_rescale
-
-
 def binarize(im: np.ndarray) -> np.ndarray:
     """Binarize an image using Otsu's method."""
     threshold = threshold_otsu(im)
@@ -95,8 +88,8 @@ def split_image(
     image: np.ndarray,
     separation: int) -> Tuple[np.ndarray, np.ndarray]:
     """Split the image at the separation and return the two images off the same size, complete by zeros."""
-    red_im: np.ndarray = contrast_enhancement(image[:separation, :])
-    green_im: np.ndarray = contrast_enhancement(image[separation:, :])
+    red_im = image[:separation, :]
+    green_im = image[separation:, :]
     diff_sep = 2 * (separation - image.shape[0] // 2)
     to_add = np.zeros((diff_sep, image.shape[1]))
 

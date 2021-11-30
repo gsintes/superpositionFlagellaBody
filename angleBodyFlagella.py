@@ -57,7 +57,6 @@ def keep_bigger_particle(bin_image: np.ndarray, center: bool):
         while not ok and i < len(areas) + 1:
             ind_max = areas.index(max(areas))
             centroid = (props["centroid-0"][ind_max], props["centroid-1"][ind_max])
-            print(centroid)
             ok = (120 > centroid[0] > 80) and (120 > centroid[1] > 80)
             if not ok:
                 areas[ind_max] = 0
@@ -160,8 +159,7 @@ def detect_angle(
     x = np.linspace(0, super_imposed.shape[0])
     ps = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
     if visualization:
-        
-        plt.imshow(super_imposed)
+        plt.imshow(super_imposed * 2 ** 8)
         plt.plot(a0 * x + b0, x, "-g", linewidth=3)
         plt.plot(a1 * x + b1, x, "-r", linewidth=3)
         plt.ylim([super_imposed.shape[0], 0])
@@ -197,7 +195,6 @@ def list_angle_detection(
         im_test = im_test / 2 ** 16
         delta_x = int(track_data["center_x"][i]) + shift_x
         delta_y = int(track_data["center_y"][i]) + shift_y 
-        # print(delta_x, delta_y)
         super_imposed = superimpose.shift_image(superimpose.superposition(im_test, mire_info),(-delta_x, -delta_y))
         super_imposed = superimpose.select_center_image(super_imposed, 100) 
         

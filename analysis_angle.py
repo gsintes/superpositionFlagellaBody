@@ -45,8 +45,8 @@ if __name__ == "__main__":
     time, angle = load_data()
     
     print(np.mean(angle))
-    # time = time[1507: 1572]
-    # angle = angle[1507: 1572]
+    time = time[160: 480]
+    angle = angle[160: 480]
 
     plt.figure()
     plt.plot(time, angle, ".")
