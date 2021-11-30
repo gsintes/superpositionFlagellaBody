@@ -1,5 +1,6 @@
 """Super impose images of the body and the flagella."""
 
+from datetime import date
 from typing import Tuple
 from statistics import median
 import json
@@ -8,6 +9,7 @@ import os
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.lib.npyio import save
 from skimage.filters.thresholding import threshold_otsu
 from skimage import exposure
 from scipy.signal import correlate2d
@@ -105,7 +107,7 @@ def split_image(
     return red_im, green_im
 
 
-def select_center_image(image: np.ndarray, size: int) -> np.ndarray:
+def select_center_image(image: np.ndarray, size: int = 100) -> np.ndarray:
     """Return the center part of the image."""
     x_mean = image.shape[0] // 2
     y_mean = image.shape[1] // 2
@@ -218,7 +220,31 @@ def superposition(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
     red_im, green_im = split_image(image, mire_info.middle_line)
     return super_impose_two_im(green_im, red_im, mire_info.displacement)
 
+def folder_superposition(
+    folder_im: str,
+    folder_save: str,
+    mire_info: MireInfo):
+    """Run the superposition and save all images in a folder."""
+    date_video = folder_im.split("/")
+    date_video = date_video[len(date_video) - 1]
+    save_dir = os.path.join(folder_save, "Videos_tracking", date_video)
+    try:
+        os.makedirs(save_dir)
+    except FileExistsError:
+        os.removedirs(save_dir)
+        os.makedirs(save_dir)
+    image_list = [os.path.join(folder_im, f) for f in os.listdir(folder_im) if (f.endswith(".tif") and not f.startswith("."))]
+    for i, im_path in enumerate(image_list):
+        im_test = mpim.imread(im_path) 
+        im_test = im_test / 2 ** 16
+        super_imposed = superposition(im_test, mire_info)
+        super_imposed = select_center_image(super_imposed)
+        mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
+
 
 if __name__ == "__main__":
-    mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
-    mire_info.save("/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/")
+    # mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
+    # mire_info.save("/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/")
+
+    mire_info = MireInfo(constants.MIRE_INFO_PATH)
+    folder_superposition(constants.FOLDER, "/Users/sintes/Desktop", mire_info)
