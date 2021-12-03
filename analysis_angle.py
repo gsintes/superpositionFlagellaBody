@@ -54,24 +54,36 @@ def smooth_angle(times: List[float], angles: List[float], window_time: float) ->
     return smooth_angle
 
 
+def angle_shift(angles: List[float]) -> List[float]:
+    """Make the angle betweem -90 and 90 degrees."""
+    angles_c = angles.copy()
+    for i, ang in enumerate(angles_c):
+        if ang < - 90:
+            angles_c[i] = ang + 180
+        if ang > 90:
+            angles_c[i] = ang - 180
+    
+    return angles_c
+
 if __name__ == "__main__":
     time, angle = load_data()
-    
+    angle = angle_shift(angle)
     print(np.mean(angle))
     # time = time[160: 480]
     # angle = angle[160: 480]
     smooth_ang = smooth_angle(time, angle, 0.25)
     plt.figure()
     plt.plot(time, angle, ".", label="raw")
-    plt.plot(time, smooth_ang, ".", label="smooth")
+    plt.plot(time, smooth_ang, "-", label="smooth")
     plt.xlabel("Time (in s)")
     plt.legend()
     plt.ylabel("Angle (in degrees)")
     
 
-    plt.figure()
-    plt.plot(get_frequencies(angle[:160]), fourier_transform(angle[:160]), ".", label="raw")
-    plt.plot(get_frequencies(smooth_ang[:160]), fourier_transform(smooth_ang[:160]), label="smooth")
-    plt.xlabel("$f\ (in\ s^{-1})$")
-    plt.legend()
+    # plt.figure()
+    # plt.plot(get_frequencies(angle[:160]), fourier_transform(angle[:160]), ".", label="raw")
+    # plt.plot(get_frequencies(smooth_ang[:160]), fourier_transform(smooth_ang[:160]), label="smooth")
+    # plt.xlabel("$f\ (in\ s^{-1})$")
+    # plt.legend()
+
     plt.show(block=True)
