@@ -51,6 +51,8 @@ def keep_bigger_particle(bin_image: np.ndarray, center: bool):
     props = measure.regionprops_table(labeled, properties=("area", "coords","centroid"))
     ok = False
     areas = list(props["area"])
+    if not areas:
+        raise NoCenteredParticle
     ind_max = areas.index(max(areas))
     if center:
         i = 0
@@ -61,8 +63,9 @@ def keep_bigger_particle(bin_image: np.ndarray, center: bool):
             if not ok:
                 areas[ind_max] = 0
             i += 1
-        if i == len(areas) + 1:
+        if i == len(areas) + 1 or areas[ind_max] < 5:
             raise NoCenteredParticle
+
     centroid = (props["centroid-0"][ind_max], props["centroid-1"][ind_max])
     coords = props["coords"][ind_max]
     x = coords[:, 0]
@@ -106,22 +109,23 @@ def detect_body(
     X = np.array(list(zip(contour[:, 0], contour[:, 1])))
 
     vect = pca(x, y)
-    a = vect[1] / vect[0]
-    b = np.mean(y) - a * np.mean(x)
-    if visualization:
-        _, axis =plt.subplots(nrows=1, ncols=3)
-        plt.suptitle("Body detection")
-        x = np.linspace(0, green_im.shape[0])
-        axis[0].imshow(green_im, cmap="gray")
-        axis[0].plot(centroid[1], centroid[0], "sr")
-        axis[0].set_ylim([green_im.shape[0], 0])
-        axis[0].set_xlim([0, green_im.shape[1]])
-        axis[0].plot(a * x + b, x, "-g", linewidth=1)  
-        axis[1].imshow(bin_green, cmap="gray")
-        axis[1].set_ylim([green_im.shape[0], 0])
-        axis[1].set_xlim([0, green_im.shape[1]])
-        axis[1].plot(a * x + b, x, "-g", linewidth=1)        
-    return a, b, vect
+    if vect[0] != 0:
+        a = vect[1] / vect[0]
+        b = np.mean(y) - a * np.mean(x)
+        if visualization:
+            _, axis =plt.subplots(nrows=1, ncols=3)
+            plt.suptitle("Body detection")
+            x = np.linspace(0, green_im.shape[0])
+            axis[0].imshow(green_im, cmap="gray")
+            axis[0].set_ylim([green_im.shape[0], 0])
+            axis[0].set_xlim([0, green_im.shape[1]])
+            axis[0].plot(a * x + b, x, "-g", linewidth=1)  
+            axis[1].imshow(bin_green, cmap="gray")
+            axis[1].set_ylim([green_im.shape[0], 0])
+            axis[1].set_xlim([0, green_im.shape[1]])
+            axis[1].plot(a * x + b, x, "-g", linewidth=1)        
+        return a, b, vect
+    return 0, 0, vect
 
     
 def detect_flagella(
@@ -134,20 +138,23 @@ def detect_flagella(
     bin_red = make_bin_im(x, y, bin_red.shape)
 
     vect = pca(x, y)
-    a1 = vect[1] / vect[0]
-    b1 = np.mean(y) - a1 * np.mean(x)
-    if visualization:
-        _, axis =plt.subplots(1, 3)
-        plt.suptitle("Flagella detection")
-        axis[0].set_ylim([red_im.shape[0], 0])
-        axis[0].set_xlim([0, red_im.shape[1]])
-        axis[0].imshow(red_im, cmap="gray")
-        axis[0].plot(a1 * x + b1, x, "-r", linewidth=1)
-        axis[1].imshow(bin_red, cmap="gray")
-        axis[1].plot(a1 * x + b1, x, "-r", linewidth=1)
-        axis[1].set_ylim([red_im.shape[0], 0])
-        axis[1].set_xlim([0, red_im.shape[1]])
-    return a1, b1, vect
+    if vect[0] != 0:
+        a1 = vect[1] / vect[0]
+        b1 = np.mean(y) - a1 * np.mean(x)
+        if visualization:
+            _, axis =plt.subplots(1, 3)
+            plt.suptitle("Flagella detection")
+            axis[0].set_ylim([red_im.shape[0], 0])
+            axis[0].set_xlim([0, red_im.shape[1]])
+            axis[0].imshow(red_im, cmap="gray")
+            axis[0].plot(a1 * x + b1, x, "-r", linewidth=1)
+            axis[1].imshow(bin_red, cmap="gray")
+            axis[1].plot(a1 * x + b1, x, "-r", linewidth=1)
+            axis[1].set_ylim([red_im.shape[0], 0])
+            axis[1].set_xlim([0, red_im.shape[1]])
+        return a1, b1, vect
+    return 0, 0, vect
+
 
 
 def detect_angle(
@@ -161,10 +168,11 @@ def detect_angle(
         raise
     x = np.linspace(0, super_imposed.shape[0])
     ps = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
+
+    sin_theta = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
     if visualization:
-        super_imposed[:, :, 0] = superimpose.contrast_enhancement(super_imposed[:, :, 0])
-        super_imposed[:, :, 1] = superimpose.contrast_enhancement(super_imposed[:, :, 1])
-        plt.imshow(super_imposed)
+        super_imposed_en = superimpose.contrast_enhancement(super_imposed)
+        plt.imshow(super_imposed_en)
         plt.plot(a0 * x + b0, x, "-g", linewidth=1)
         plt.plot(a1 * x + b1, x, "-r", linewidth=1)
         plt.ylim([super_imposed.shape[0], 0])
@@ -173,7 +181,7 @@ def detect_angle(
         plt.pause(0.001)
         plt.clf()
         plt.close() 
-    return np.arccos(ps)
+    return np.sign(sin_theta) * np.arccos(ps)
 
 
 def save_data(time: List[int], angle: List[float]) -> None:
@@ -210,11 +218,10 @@ def list_angle_detection(
             for l in range(super_imposed.shape[1]):
                 super_imposed[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
         try:
-            times.append(i / constants.FPS)
             angle.append(180 * detect_angle(super_imposed, visualization) / np.pi)
-        except NoCenteredParticle as e:
-            print("No body found in the center.")
-        t2 = time.time()
+            times.append(i / constants.FPS)
+        except NoCenteredParticle:
+            pass
     return times, angle
 
 

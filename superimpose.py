@@ -1,6 +1,6 @@
 """Super impose images of the body and the flagella."""
 
-from datetime import date
+import shutil
 from typing import Tuple
 from statistics import median
 import json
@@ -9,9 +9,8 @@ import os
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.lib.npyio import save
-from skimage.filters.thresholding import threshold_otsu
 from skimage import exposure
+from skimage.filters.thresholding import threshold_otsu
 from scipy.signal import correlate2d
 
 import constants
@@ -51,9 +50,17 @@ class MireInfo:
 
 def contrast_enhancement(image: np.ndarray) -> np.ndarray:
     """Enhance the contrast of the image."""
-    p2, p98 = np.percentile(image, (1, 99))
-    img_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))
-    return img_rescale
+    if len(image.shape) == 3:
+        image_enhanced = image.copy()
+        for i in range(3):
+            image_enhanced[:, :, i] = contrast_enhancement(image_enhanced[:, :, i])
+        return image_enhanced
+    elif len(image.shape) == 2:
+        p2, p98 = np.percentile(image, (1, 99))
+        img_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))        
+        return img_rescale
+    else:
+        raise IndexError("Not the good dimension.")
 
 
 def moving_average(array: np.ndarray, averaging_length: int) -> np.ndarray:
@@ -115,6 +122,7 @@ def select_center_image(image: np.ndarray, size: int = 100) -> np.ndarray:
         return image[x_mean - size : x_mean + size, y_mean - size : y_mean + size]
     return image[x_mean - size : x_mean + size, y_mean - size : y_mean + size, :]
 
+
 def find_displacement(
     green_mire: np.ndarray,
     red_mire: np.ndarray,
@@ -140,7 +148,6 @@ def shift_image(
     image: np.ndarray,
     displacement: Tuple[int, int]) -> np.ndarray:
     """Shift the image and fill boundaries with black."""
-    #TODO make it possible for 3d
     if len(image.shape) == 3:
         shifted = image.copy()
         for i in range(3):
@@ -231,15 +238,20 @@ def folder_superposition(
     try:
         os.makedirs(save_dir)
     except FileExistsError:
-        os.removedirs(save_dir)
+        shutil.rmtree(save_dir)
         os.makedirs(save_dir)
     image_list = [os.path.join(folder_im, f) for f in os.listdir(folder_im) if (f.endswith(".tif") and not f.startswith("."))]
-    for i, im_path in enumerate(image_list):
+    for i, im_path in enumerate(image_list[0: 2]):
         im_test = mpim.imread(im_path) 
         im_test = im_test / 2 ** 16
         super_imposed = superposition(im_test, mire_info)
         super_imposed = select_center_image(super_imposed)
-        mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
+        super_imposed = contrast_enhancement(super_imposed)
+        vis = super_imposed[:, :, 0] 
+        plt.figure()
+        plt.imshow(super_imposed, cmap="gray")
+        plt.show(block=True)
+        # mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
 
 
 if __name__ == "__main__":
@@ -247,4 +259,7 @@ if __name__ == "__main__":
     # mire_info.save("/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/")
 
     mire_info = MireInfo(constants.MIRE_INFO_PATH)
-    folder_superposition(constants.FOLDER, "/Users/sintes/Desktop", mire_info)
+    parent_folder = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING"
+    list_dir = [f for f in os.listdir(parent_folder) if not f.startswith(".")]
+    for folder in list_dir[0: 1]:
+        folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)
