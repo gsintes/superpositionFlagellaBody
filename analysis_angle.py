@@ -106,22 +106,23 @@ def linear_interpolation(times: List[float], angles: List[float]) -> Tuple[List[
     return times_inter, angle_inter
 
 
+def clean_data(time: List[float], angle: List[float], window_size: float) -> Tuple[List[float], List[float]]:
+    """Prepare the data"""
+    angle = angle_shift(angle)
+    time, angle = linear_interpolation(time, angle)
+    smooth_ang = smooth_angle(angle, window_size)
+    return  time, smooth_ang
+
+
 if __name__ == "__main__":
     track_data = load_track_data()
     time, angle = load_data()
-    angle = angle_shift(angle)
-    
-    # time = time[: 480]
-    # angle = angle[: 480]
-    time, angle = linear_interpolation(time, angle)
-    smooth_ang = smooth_angle(angle, 0.5)
+    time, smooth_ang = clean_data(time, angle, 0.5)
 
     extrema = detect_extrema(time, smooth_ang)
 
-    print("Amplitude mean:", get_amplitude(extrema))
-    print("Period:", get_period(extrema))
+    
     plt.figure()
-    plt.plot(time, angle, '.')
     plt.plot(time, smooth_ang, "-")
     plt.plot(extrema[:, 0], extrema[:, 1], "*r")
     plt.xlabel("Time (in s)")
@@ -134,7 +135,10 @@ if __name__ == "__main__":
     plt.plot(freq, ft_angle, label="smooth")
     plt.xlabel("$f\ (in\ s^{-1})$")
     plt.legend()
-    print("mean angle:", np.mean(smooth_ang))
-    print("Frequency mode:",freq[ft_angle.index(1)])
+
+    print(f"Amplitude mean: {get_amplitude(extrema):.2f} deg")
+    print(f"Period: {get_period(extrema):.2f} s")
+    print(f"Mean angle: {np.mean(smooth_ang):.2f} deg")
+    print(f"Frequency mode: {freq[ft_angle.index(1)]:.2f} Hz")
 
     plt.show(block=True)
