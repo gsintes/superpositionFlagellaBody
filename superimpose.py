@@ -247,11 +247,10 @@ def folder_superposition(
         super_imposed = superposition(im_test, mire_info)
         super_imposed = select_center_image(super_imposed)
         super_imposed = contrast_enhancement(super_imposed)
-        vis = super_imposed[:, :, 0] 
         plt.figure()
         plt.imshow(super_imposed, cmap="gray")
         plt.show(block=True)
-        # mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
+        mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
 
 
 if __name__ == "__main__":
