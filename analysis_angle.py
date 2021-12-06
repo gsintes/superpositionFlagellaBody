@@ -69,12 +69,26 @@ def angle_shift(angles: List[float]) -> List[float]:
 def detect_extrema(times: List[float], angles: List[float])-> np.ndarray:
     """Detect the extrema of the angles."""
     angles = np.array(angles)
-    differences = angles[1: ] - angles[: len(angles) - 1]
+    differences = angles[1: ] - angles[:- 1]
     extrema = []
-    for i, diff in enumerate(differences[ : len(differences) - 1]):
+    for i, diff in enumerate(differences[: - 1]):
         if diff * differences[i + 1] < 0:
             extrema.append((times[i + 1], angles[i + 1]))
     return np.array(extrema)
+
+
+def get_amplitude(extrema: np.ndarray) -> float:
+    """Give the cone angle from the extrema."""
+    angles = extrema[:, 1]
+    diff = angles[1:] - angles[:-1]
+    return np.mean(np.abs(diff)) / 2
+
+
+def get_period(extrema: np.ndarray) -> float:
+    """Give the period from the extrema."""
+    times = extrema[:, 0]
+    diff = times[1:] - times[:-1]
+    return np.mean(np.abs(diff)) * 2
 
 
 def linear_interpolation(times: List[float], angles: List[float]) -> Tuple[List[float], List[float]]:
@@ -100,10 +114,14 @@ if __name__ == "__main__":
     # time = time[: 480]
     # angle = angle[: 480]
     time, angle = linear_interpolation(time, angle)
-    smooth_ang = smooth_angle(angle, 0.25)
+    smooth_ang = smooth_angle(angle, 0.5)
 
     extrema = detect_extrema(time, smooth_ang)
+
+    print("Amplitude mean:", get_amplitude(extrema))
+    print("Period:", get_period(extrema))
     plt.figure()
+    plt.plot(time, angle, '.')
     plt.plot(time, smooth_ang, "-")
     plt.plot(extrema[:, 0], extrema[:, 1], "*r")
     plt.xlabel("Time (in s)")
