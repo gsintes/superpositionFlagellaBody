@@ -1,11 +1,13 @@
 """Data analysis for the angle between body and flagella."""
 
 import os
-from statistics import mean
+import re
 from typing import List, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.core.shape_base import block
+import pandas as pd
 
 import constants
 from trackParsing import load_track_data
@@ -51,7 +53,8 @@ def smooth_angle(angles: List[float], window_time: float) -> List[float]:
         f = freq[i]
     ft_angle[i: ] = 0
     smooth_ang = list(np.fft.irfft(ft_angle))
-    smooth_ang.append(0)
+    if len(angles) % 2 == 1:
+        smooth_ang.append(0)
     return smooth_ang
 
 
@@ -77,18 +80,18 @@ def detect_extrema(times: List[float], angles: List[float])-> np.ndarray:
     return np.array(extrema)
 
 
-def get_amplitude(extrema: np.ndarray) -> float:
+def get_amplitude(extrema: np.ndarray) -> Tuple[float, float]:
     """Give the cone angle from the extrema."""
     angles = extrema[:, 1]
     diff = angles[1:] - angles[:-1]
-    return np.mean(np.abs(diff)) / 2
+    return np.mean(np.abs(diff)) / 2, np.std(np.abs(diff)) / 2
 
 
-def get_period(extrema: np.ndarray) -> float:
+def get_period(extrema: np.ndarray) -> Tuple[float, float]:
     """Give the period from the extrema."""
     times = extrema[:, 0]
     diff = times[1:] - times[:-1]
-    return np.mean(np.abs(diff)) * 2
+    return np.mean(np.abs(diff)) * 2, np.std(np.abs(diff)) * 2
 
 
 def linear_interpolation(times: List[float], angles: List[float]) -> Tuple[List[float], List[float]]:
@@ -98,10 +101,10 @@ def linear_interpolation(times: List[float], angles: List[float]) -> Tuple[List[
     diff_times = times[1: ] - times[:len(times) -1]
     for i, diff in enumerate(diff_times):
         if diff > 1.5 / constants.FPS:
-            nb_missing = int(diff * constants.FPS) - 1
+            nb_missing = int(round(diff * constants.FPS)) - 1
             slope = (np.mean(angles[i + 1: i + 10]) - np.mean(angles[i - 10: i])) / diff
             for k in range(1, nb_missing + 1):
-                ang = angle[i] + k * slope / constants.FPS
+                ang = angles[i] + k * slope / constants.FPS
                 angle_inter.insert(i + k, ang)
     return times_inter, angle_inter
 
@@ -114,31 +117,69 @@ def clean_data(time: List[float], angle: List[float], window_size: float) -> Tup
     return  time, smooth_ang
 
 
+def run_analysis(folder: str, limits: Tuple[int, int], visualization: bool) -> pd.Series:
+    """Run the analysis on the section of the data."""
+    time, angle = load_data(folder)
+    lim_track0 = int(round(min(time) * constants.FPS)) + limits[0]
+    lim_track1 = int(round(min(time) * constants.FPS)) + limits[1]
+    track_data: pd.DataFrame = load_track_data()[lim_track0: lim_track1]
+    time = time[limits[0]: limits[1]]
+    angle = angle[limits[0]: limits[1]]
+    time, angle = clean_data(time, angle, 0.5)
+    extrema = detect_extrema(time, angle)
+    freq = get_frequencies(angle)
+    ft_angle = fourier_transform(angle)
+
+    amplitude, std_a = get_amplitude(extrema)
+    period, std_p = get_period(extrema)
+    mean_angle = np.mean(angle)
+    fourier_mode = freq[ft_angle.index(1)]
+
+    data = pd.Series({
+        "Folder": folder,
+        "Limits": limits,
+        "Nb_extrema": len(extrema),
+        "Amplitude": amplitude,
+        "Std_amplitude": std_a,
+        "Period": period,
+        "Std_period": std_p,
+        "Mean_angle": mean_angle,
+        "Fourier_mode": fourier_mode,
+        "Mean_vel": track_data["vel"].mean(),
+        "Std_vel": track_data["vel"].std()
+        })
+
+    if visualization:
+        plt.figure()
+        plt.plot(time, angle, "-")
+        plt.plot(extrema[:, 0], extrema[:, 1], "*r")
+        plt.xlabel("Time (in s)")
+        plt.ylabel("Angle (in degrees)")
+
+        plt.figure()
+        plt.plot(freq, ft_angle, label="smooth")
+        plt.xlabel("$f\ (in\ s^{-1})$")
+        plt.legend()
+        plt.show(block=True)
+    return data
+
+
+def get_limits(lim_lit: str) -> Tuple[int, int]:
+    """Tranfroms the string of limits into a tuple of ints."""
+    exp = re.search(r"^\((\d*),\ (\d*)", lim_lit)
+    lim0 = int(exp.group(1))
+    lim1 = int(exp.group(2))
+    return (lim0, lim1)
+
+
 if __name__ == "__main__":
-    track_data = load_track_data()
-    time, angle = load_data()
-    time, smooth_ang = clean_data(time, angle, 0.5)
-
-    extrema = detect_extrema(time, smooth_ang)
-
+    analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    data = pd.DataFrame()
+    data = pd.DataFrame(
+        [run_analysis(info["Folder"], get_limits(info["Limits"]), False) for _, info in analysis_data.iterrows()]
+        )
+    data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
     
-    plt.figure()
-    plt.plot(time, smooth_ang, "-")
-    plt.plot(extrema[:, 0], extrema[:, 1], "*r")
-    plt.xlabel("Time (in s)")
-    plt.ylabel("Angle (in degrees)")
-    
-    freq = get_frequencies(smooth_ang)
-    ft_angle = fourier_transform(smooth_ang)
-    plt.figure()
-    plt.plot(get_frequencies(angle), fourier_transform(angle), ".", label="raw")
-    plt.plot(freq, ft_angle, label="smooth")
-    plt.xlabel("$f\ (in\ s^{-1})$")
-    plt.legend()
-
-    print(f"Amplitude mean: {get_amplitude(extrema):.2f} deg")
-    print(f"Period: {get_period(extrema):.2f} s")
-    print(f"Mean angle: {np.mean(smooth_ang):.2f} deg")
-    print(f"Frequency mode: {freq[ft_angle.index(1)]:.2f} Hz")
-
+    # plt.figure()
+    data.plot("Mean_vel", "Amplitude", "scatter")
     plt.show(block=True)

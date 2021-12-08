@@ -73,7 +73,7 @@ def calculate_velocities(data: pd.DataFrame) -> pd.DataFrame:
     
     shift = - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) / 2 + 100
     data["b_coeff"] = - ( data["center_y"] + shift + mire_info.displacement[1]) * data["slope"] +\
-         (data["center_x"] + mire_info.displacement[0]- (constants.IM_SIZE[1] / 2) + 100)
+         (data["center_x"] + mire_info.displacement[0]-  (constants.IM_SIZE[1] / 2) + 100)
     return data
 
 
