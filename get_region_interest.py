@@ -42,9 +42,8 @@ if __name__ == "__main__":
                 again = (inp == "Y" or inp == "y")
             except IndexError:
                 inp = input("Do you want to skip this plot? (Y/n)")
-                if not (inp == "Y" or inp == "y"):
+                if (inp == "Y" or inp == "y"):
                     again = False
-                    continue
             
     data = pd.DataFrame()
     data["Folder"] = folders
