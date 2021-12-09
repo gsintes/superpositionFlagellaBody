@@ -32,16 +32,22 @@ if __name__ == "__main__":
         while again:
             try:
                 index_0, index_1 = select_region(folder)
+                if index_1 != index_0:
+                    folders.append(folder)
+                    if index_0 > 0:
+                        limits.append((index_0, index_1))
+                    else:
+                        limits.append((0, index_1))
+                inp = input("Do you want to select another region on this plot ? (Y/n)")
+                again = (inp == "Y" or inp == "y")
             except IndexError:
                 inp = input("Do you want to skip this plot? (Y/n)")
                 if not (inp == "Y" or inp == "y"):
-                    index_0, index_1 = select_region(folder)
-            folders.append(folder)
-            limits.append((index_0, index_1))
-            inp = input("Do you want to select another region on this plot ? (Y/n)")
-            again = (inp == "Y" or inp == "y")
+                    again = False
+                    continue
+            
     data = pd.DataFrame()
     data["Folder"] = folders
     data["Limits"] = limits
-    data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"), index=False)
         
