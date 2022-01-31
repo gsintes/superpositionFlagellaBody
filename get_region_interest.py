@@ -24,7 +24,7 @@ def select_region(folder: str) -> Tuple[int, int]:
     return index_0, index_1
 
 if __name__ == "__main__":
-    list_dir = [os.path.join(constants.FOLDER_UP, f) for f in os.listdir(constants.FOLDER_UP) if not (f.startswith(".") and f.endswith(".csv"))]
+    list_dir = [os.path.join(constants.FOLDER_UP, f) for f in os.listdir(constants.FOLDER_UP) if not (f.startswith(".") or f.endswith(".csv"))]
     folders: List[str] = []
     limits: List[Tuple[int, int]] = []
     for folder in list_dir:
