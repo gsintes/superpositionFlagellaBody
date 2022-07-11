@@ -102,7 +102,7 @@ def detect_body(
     blur = gaussian(res, 1)
    
     bin_green = li_binarization(blur)
-    x, y, centroid = keep_bigger_particle(bin_green, center=True)
+    x, y, _ = keep_bigger_particle(bin_green, center=True)
     bin_green = make_bin_im(x, y, bin_green.shape)
     contour = measure.find_contours(bin_green, 0.4)[0]
 
@@ -123,7 +123,7 @@ def detect_body(
             axis[1].imshow(bin_green, cmap="gray")
             axis[1].set_ylim([green_im.shape[0], 0])
             axis[1].set_xlim([0, green_im.shape[1]])
-            axis[1].plot(a * x + b, x, "-g", linewidth=1)        
+            axis[1].plot(a * x + b, x, "-g", linewidth=1)  
         return a, b, vect
     return 0, 0, vect
 
@@ -159,10 +159,11 @@ def detect_flagella(
 
 def detect_angle(
     super_imposed: np.ndarray,
+    i: int,
     visualization: bool = False) ->  float:
     """Detect the angle between the body and the flagella."""
     try:
-        a0, b0, vect_body = detect_body(super_imposed[:, :, 1], visualization=visualization)
+        a0, b0, vect_body = detect_body(super_imposed[:, :, 1], visualization=False)
         a1, b1, vect_flagella = detect_flagella(super_imposed[:, :, 0], visualization=False)
     except NoCenteredParticle:
         raise
@@ -177,16 +178,17 @@ def detect_angle(
         plt.plot(a1 * x + b1, x, "-r", linewidth=1)
         plt.ylim([super_imposed.shape[0], 0])
         plt.xlim([0, super_imposed.shape[1]])
-        plt.draw()
+        # plt.draw()
         plt.pause(0.001)
+        plt.savefig(f"C:/Users/Kunyun/Desktop/Wobbling/{i}")      
         plt.clf()
-        plt.close() 
+        # plt.close() 
     return np.sign(sin_theta) * np.arccos(ps)
 
 
-def save_data(time: List[int], angle: List[float]) -> None:
+def save_data(time: List[int], angle: List[float], folder=constants.FOLDER) -> None:
     """Save the data to a text file."""
-    textfile = open(os.path.join(constants.FOLDER, "angle_body_flagella.csv"), "w")
+    textfile = open(os.path.join(folder, "angle_body_flagella.csv"), "w")
     for i in range(len(time)):
         textfile.write(f"{time[i]}, {angle[i]}\n")
     textfile.close()
@@ -218,7 +220,7 @@ def list_angle_detection(
             for l in range(super_imposed.shape[1]):
                 super_imposed[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
         try:
-            angle.append(180 * detect_angle(super_imposed, visualization) / np.pi)
+            angle.append(180 * detect_angle(super_imposed, i, visualization) / np.pi)
             times.append(i / constants.FPS)
         except NoCenteredParticle:
             pass
@@ -230,6 +232,6 @@ if __name__ == "__main__":
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
     times, angle = list_angle_detection(image_list, window_size=20, visualization=False)    
-    save_data(times, angle)
-    plt.close('all')
-    plt.show(block=True)
+    save_data(times, angle, constants.FOLDER)
+    # plt.close('all')
+    # plt.show(block=True)
