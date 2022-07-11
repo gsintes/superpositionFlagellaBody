@@ -231,5 +231,5 @@ if __name__ == "__main__":
 
     times, angle = list_angle_detection(image_list, window_size=20, visualization=False)    
     save_data(times, angle)
-    plt.close('all')
-    plt.show(block=True)
+    # plt.close('all')
+    # plt.show(block=True)
