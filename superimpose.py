@@ -42,6 +42,7 @@ class MireInfo:
     def save(self, folder: str) -> None:
         """Save the mire info in a json file."""
         with open(os.path.join(folder, "mire_info.json"), "w", encoding="utf-8") as outfile:
+            outfile.write("")
             json.dump(self.__dict__, outfile, indent=4)
 
     def __repr__(self) -> str:
@@ -216,7 +217,7 @@ def mire_analysis(mire_path: str, visualization: bool = False) -> MireInfo:
 
     if visualization:
         plt.figure()
-        plt.imshow(super_imposed)
+        plt.imshow(contrast_enhancement(super_imposed))
         plt.show(block=True)
     res = MireInfo(middle_line, displacement)
     return res
@@ -254,11 +255,11 @@ def folder_superposition(
 
 
 if __name__ == "__main__":
-    # mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
-    # mire_info.save("/Volumes/GUILLAUME/Ficoll Marty/2020-11-05_13h43m12s_mire/")
+    mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
+    mire_info.save("F:/Ficoll/2020-11-05_13h43m12s_mire/")
 
-    mire_info = MireInfo(constants.MIRE_INFO_PATH)
-    parent_folder = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING"
-    list_dir = [f for f in os.listdir(parent_folder) if not f.startswith(".")]
-    for folder in list_dir[0: 1]:
-        folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)
+    # mire_info = MireInfo(constants.MIRE_INFO_PATH)
+    # parent_folder = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING"
+    # list_dir = [f for f in os.listdir(parent_folder) if not f.startswith(".")]
+    # for folder in list_dir[0: 1]:
+    #     folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)

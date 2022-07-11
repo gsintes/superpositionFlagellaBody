@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
-from pandas.io.parquet import FastParquetImpl
 
 from angleBodyFlagella import detect_flagella
 from trackParsing import load_track_data

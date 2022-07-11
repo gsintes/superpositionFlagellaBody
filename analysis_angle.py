@@ -154,12 +154,14 @@ def run_analysis(folder: str, limits: Tuple[int, int], visualization: bool) -> p
         plt.plot(extrema[:, 0], extrema[:, 1], "*r")
         plt.xlabel("Time (in s)")
         plt.ylabel("Angle (in degrees)")
+        plt.savefig(f"{folder}/angle.png")
 
         plt.figure()
         plt.plot(freq, ft_angle, label="smooth")
         plt.xlabel("$f\ (in\ s^{-1})$")
-        plt.legend()
-        plt.show(block=True)
+        plt.savefig(f"{folder}/fourier.png")
+        plt.close()
+        # plt.show(block=True)
     return data
 
 
@@ -179,6 +181,15 @@ if __name__ == "__main__":
         )
     data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
     
-    # plt.figure()
+    data["Count_freq"] = 1 / data["Period"]
+    x = np.linspace(min(data["Fourier_mode"]), max(data["Fourier_mode"]))
+    plt.figure()
+    plt.plot(data["Fourier_mode"], data["Count_freq"], ".")
+    plt.plot(x, x, "k--")
+    plt.xlabel("Fourier frequency (Hz)")
+    plt.ylabel("Count frequency (Hz)")
+
+    data.plot("Mean_vel", "Period", "scatter")
     data.plot("Mean_vel", "Amplitude", "scatter")
+    data.plot("Period", "Amplitude", "scatter")
     plt.show(block=True)

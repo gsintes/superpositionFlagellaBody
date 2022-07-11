@@ -9,6 +9,7 @@ FPS = 80
 MIRE_INFO_PATH = "/Volumes/GSMit/Ficoll/2020-11-05_13h43m12s_mire/mire_info.json"
 MIRE_PATH = "/Volumes/GSMit/Ficoll/2020-11-05_13h43m12s_mire/Image0574023.tif"
 
+
 ANGLE_DATA_FILE = "angle_body_flagella.csv"
 
 TRACK_FILE = "Track/Track.txt"
