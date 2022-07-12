@@ -1,6 +1,6 @@
 """Define the useful constants."""
 
-FOLDER_UP = "/Volumes/GSMit/Ficoll/Ficoll17%_20-11-05_1uLbactos_TRACKING/" 
+FOLDER_UP = "/Users/sintes/Desktop/Martyna/PhD/Ficoll/Ficoll17%_20-11-05_1uLbactos_TRACKING/" 
 FOLDER = "/Volumes/GSMit/Ficoll/Ficoll17%_20-11-05_1uLbactos_TRACKING/2020-11-05_13h34m25s"
 
 IM_SIZE = (1024, 1024)
