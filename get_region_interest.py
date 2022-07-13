@@ -31,7 +31,9 @@ if __name__ == "__main__":
         again = True
         while again:
             try:
-                index_0, index_1 = select_region(folder)
+                index_a, index_b = select_region(folder)
+                index_0 = min(index_a, index_b)
+                index_1 = max(index_a, index_b)
                 if index_1 != index_0:
                     folders.append(folder)
                     if index_0 > 0:

@@ -232,6 +232,7 @@ if __name__ == "__main__":
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
     times, angle = list_angle_detection(image_list, window_size=20, visualization=False)    
+
     save_data(times, angle, constants.FOLDER)
     # plt.close('all')
     # plt.show(block=True)

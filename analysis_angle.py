@@ -6,7 +6,6 @@ from typing import List, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.core.shape_base import block
 import pandas as pd
 
 import constants
@@ -119,7 +118,10 @@ def clean_data(time: List[float], angle: List[float], window_size: float) -> Tup
 
 def run_analysis(folder: str, limits: Tuple[int, int], visualization: bool) -> pd.Series:
     """Run the analysis on the section of the data."""
+    print(folder)
+    print(limits)
     time, angle = load_data(folder)
+    print(len(time))
     lim_track0 = int(round(min(time) * constants.FPS)) + limits[0]
     lim_track1 = int(round(min(time) * constants.FPS)) + limits[1]
     track_data: pd.DataFrame = load_track_data()[lim_track0: lim_track1]
@@ -171,14 +173,14 @@ def get_limits(lim_lit: str) -> Tuple[int, int]:
     exp = re.search(r"^\((\d*),\ (\d*)", lim_lit)
     lim0 = int(exp.group(1))
     lim1 = int(exp.group(2))
-    return (lim0, lim1)
+    return (min(lim0, lim1), max(lim0, lim1))
 
 
 if __name__ == "__main__":
     analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
     data = pd.DataFrame()
     data = pd.DataFrame(
-        [run_analysis(info["Folder"], get_limits(info["Limits"]), False) for _, info in analysis_data.iterrows()]
+        [run_analysis(folder=info["Folder"], limits=get_limits(info["Limits"]), visualization=False) for _, info in analysis_data.iterrows()]
         )
     data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
     
