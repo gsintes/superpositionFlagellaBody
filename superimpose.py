@@ -39,9 +39,9 @@ class MireInfo:
         """Return the displacement in y"""
         return self.displacement[1]
     
-    def save(self, folder: str) -> None:
+    def save(self, file: str) -> None:
         """Save the mire info in a json file."""
-        with open(os.path.join(folder, "mire_info.json"), "w", encoding="utf-8") as outfile:
+        with open(file, "w", encoding="utf-8") as outfile:
             outfile.write("")
             json.dump(self.__dict__, outfile, indent=4)
 
@@ -256,7 +256,7 @@ def folder_superposition(
 
 if __name__ == "__main__":
     mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
-    mire_info.save("F:/Ficoll/2020-11-05_13h43m12s_mire/")
+    mire_info.save(constants.MIRE_INFO_PATH)
 
     # mire_info = MireInfo(constants.MIRE_INFO_PATH)
     # parent_folder = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING"
