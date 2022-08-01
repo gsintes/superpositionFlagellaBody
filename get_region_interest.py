@@ -46,6 +46,9 @@ if __name__ == "__main__":
                 inp = input("Do you want to skip this plot? (Y/n)")
                 if (inp == "Y" or inp == "y"):
                     again = False
+            except FileNotFoundError:
+                print(f"Data file not found for {folder}")
+                again = False
             
     data = pd.DataFrame()
     data["Folder"] = folders

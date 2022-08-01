@@ -180,7 +180,7 @@ def detect_angle(
         plt.xlim([0, super_imposed.shape[1]])
         # plt.draw()
         plt.pause(0.001)
-        plt.savefig(f"C:/Users/Kunyun/Desktop/Wobbling/{i}")      
+        # plt.savefig(f"C:/Users/Kunyun/Desktop/Wobbling/{i}")      
         plt.clf()
         # plt.close() 
     return np.sign(sin_theta) * np.arccos(ps)

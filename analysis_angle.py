@@ -118,10 +118,7 @@ def clean_data(time: List[float], angle: List[float], window_size: float) -> Tup
 
 def run_analysis(folder: str, limits: Tuple[int, int], visualization: bool) -> pd.Series:
     """Run the analysis on the section of the data."""
-    print(folder)
-    print(limits)
     time, angle = load_data(folder)
-    print(len(time))
     lim_track0 = int(round(min(time) * constants.FPS)) + limits[0]
     lim_track1 = int(round(min(time) * constants.FPS)) + limits[1]
     track_data: pd.DataFrame = load_track_data()[lim_track0: lim_track1]
