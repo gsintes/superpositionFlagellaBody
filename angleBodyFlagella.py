@@ -2,7 +2,6 @@
 
 import os
 from typing import Tuple, List
-import time
 
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
@@ -20,15 +19,7 @@ class NoCenteredParticle(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
-def timit(func):
-    """Timing decorator."""
-    def wrapper(*arg, **kw):
-        t1 = time.time()
-        res = func(*arg, **kw)
-        t2 = time.time()
-        print(t2 - t1)
-        return res
-    return wrapper
+
 
 def li_binarization(image: np.ndarray) -> np.ndarray:
     """Binarize the image using the li algorithm."""
@@ -39,7 +30,7 @@ def li_binarization(image: np.ndarray) -> np.ndarray:
 def pca(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Return the main component of the detected region."""
     M = np.cov(X, Y)
-    val, vect = np.linalg.eig(M)
+    val, vect = np.linalg.eig(M) 
     val = list(val)
     i = val.index(max(val))
     return vect[:, i]
