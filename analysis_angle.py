@@ -7,6 +7,7 @@ from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy import signal
 
 import constants
 from trackParsing import load_track_data
@@ -52,7 +53,7 @@ class Analysis:
         lim_track1 = int(round(min(time) * constants.FPS)) + limits[1]
         self.track_data: pd.DataFrame = load_track_data()[lim_track0: lim_track1]
         
-        self.window_size = 0.5
+        self.window_size = 0.25
         self.times = time
         self.angles = angle.copy()
         self.times = self.times[limits[0]: limits[1]]
@@ -193,34 +194,26 @@ def get_limits(lim_lit: str) -> Tuple[int, int]:
 
 
 if __name__ == "__main__":
-    # analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
 
-    # data_list: List[pd.Series] = []
-    # for _, info in analysis_data.iterrows():
-    #     analysis = Analysis(limits=get_limits(info["Limits"]), folder=info["Folder"])
-    #     data_list.append(analysis(visualization=True))
+    data_list: List[pd.Series] = []
+    for _, info in analysis_data.iterrows():
+        analysis = Analysis(limits=get_limits(info["Limits"]), folder=info["Folder"])
+        data_list.append(analysis(visualization=True))
 
-    # data = pd.DataFrame()
-    # data = pd.DataFrame(data_list)
-    # data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    data = pd.DataFrame()
+    data = pd.DataFrame(data_list)
+    data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
     
-    # data["Count_freq"] = 1 / data["Period"]
-    # x = np.linspace(min(data["Fourier_mode"]), max(data["Fourier_mode"]))
-    # plt.figure()
-    # plt.plot(data["Fourier_mode"], data["Count_freq"], ".")
-    # plt.plot(x, x, "k--")
-    # plt.xlabel("Fourier frequency (Hz)")
-    # plt.ylabel("Count frequency (Hz)")
+    data["Count_freq"] = 1 / data["Period"]
+    x = np.linspace(min(data["Fourier_mode"]), max(data["Fourier_mode"]))
+    plt.figure()
+    plt.plot(data["Fourier_mode"], data["Count_freq"], ".")
+    plt.plot(x, x, "k--")
+    plt.xlabel("Fourier frequency (Hz)")
+    plt.ylabel("Count frequency (Hz)")
 
-    # data.plot("Mean_vel", "Period", "scatter")
-    # data.plot("Mean_vel", "Amplitude", "scatter")
-    # data.plot("Period", "Amplitude", "scatter")
-    # plt.show(block=True)
-
-    period = 1
-    amplitude = 3
-    X = np.linspace(0, 20, 1600)
-    Y = amplitude * np.sin(2 * np.pi * X / period)
-    ana = Analysis((0, 1500), angles=Y, times=X)
-    ana(True)
+    data.plot("Mean_vel", "Period", "scatter")
+    data.plot("Mean_vel", "Amplitude", "scatter")
+    data.plot("Period", "Amplitude", "scatter")
     plt.show(block=True)
