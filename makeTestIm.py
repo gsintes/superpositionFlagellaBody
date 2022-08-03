@@ -62,13 +62,16 @@ class Rectangle:
         x0 = self.center[0]
         y0 = self.center[1]
 
+        x0p = np.cos(self.angle) * x0 + np.sin(self.angle) * y0
+        y0p = - np.sin(self.angle) * x0 + np.cos(self.angle) * x0
+
         im = np.zeros(im_shape)
         for x in range(im_shape[0]):
             for y in range(im_shape[1]):
                 xp = np.cos(self.angle) * x + np.sin(self.angle) * y
                 yp = - np.sin(self.angle) * x + np.cos(self.angle) * y 
-                if -self.length < xp - x0 < self.length // 2:
-                    if -self.width < yp - y0 < self.width // 2:
+                if -self.length < xp - x0p < self.length // 2:
+                    if -self.width < yp - y0p < self.width // 2:
                         im[x, y] = 1
         return im
 
@@ -77,7 +80,7 @@ class Rectangle:
 if __name__ == "__main__":
     im_shape = (100, 100)
     square_size = 10
-    ellipse = Rectangle(center=(50, 50), angle=0 * np.pi / 2, length=40, width=10)
+    ellipse = Rectangle(center=(50, 50), angle=np.pi / 2, length=40, width=10)
     image_init = ellipse.make_im(im_shape)
 
     plt.figure()
