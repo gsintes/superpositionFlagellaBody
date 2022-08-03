@@ -99,7 +99,7 @@ class Analysis:
                 for k in range(1, nb_missing + 1):
                     ang = self.cleaned_angles[i] + k * slope / constants.FPS
                     angle_inter.insert(i + k, ang)
-        self.times = times_inter.copy()
+        self.cleaned_times = times_inter.copy()
         self.cleaned_angles = angle_inter
 
     def _clean_data(self) -> None:
@@ -116,12 +116,11 @@ class Analysis:
     def _detect_extrema(self)-> None:
         """Detect the extrema of the angles."""
         angles = np.array(self.cleaned_angles)[int(self.window_size * constants.FPS) : -int(self.window_size * constants.FPS)]
-        print(angles.shape)
         differences = angles[1: ] - angles[:- 1]
         extrema = []
         for i, diff in enumerate(differences[: - 1]):
             if diff * differences[i + 1] < 0:
-                extrema.append((self.window_size + self.times[i + 1], angles[i + 1]))
+                extrema.append((self.window_size + self.cleaned_times[i + 1], angles[i + 1]))
         self.extrema = np.array(extrema)
 
     def _get_amplitude(self) -> None:
@@ -167,7 +166,7 @@ class Analysis:
 
         if visualization:
             plt.figure()
-            plt.plot(self.times, self.cleaned_angles, "-", label="Smooth")
+            plt.plot(self.cleaned_times, self.cleaned_angles, "-", label="Smooth")
             plt.plot(self.times, self.angles, "-", label="raw")
             plt.plot(self.extrema[:, 0], self.extrema[:, 1], "*r")
             plt.xlabel("Time (in s)")
