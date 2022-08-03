@@ -14,6 +14,7 @@ import superimpose
 import constants
 from trackParsing import load_track_data
 
+from makeTestIm import Ellipse, Rectangle
 
 class NoCenteredParticle(Exception):
     def __init__(self, *args: object) -> None:
@@ -225,5 +226,3 @@ if __name__ == "__main__":
     times, angle = list_angle_detection(image_list, window_size=20, visualization=False)    
 
     save_data(times, angle, constants.FOLDER)
-    # plt.close('all')
-    # plt.show(block=True)
