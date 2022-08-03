@@ -60,7 +60,7 @@ class Analysis:
         self.cleaned_angles = self.angles.copy()
 
 
-    def smooth_angle(self, window_time: float) -> None:
+    def _smooth_angle(self, window_time: float) -> None:
         """Smooth the angle on a timescale window_time in secondes by FT cutting."""
         freq = get_frequencies(self.cleaned_angles)
         ft_angle = np.fft.rfft(self.cleaned_angles)
@@ -76,7 +76,7 @@ class Analysis:
         self.cleaned_angles = smooth_ang.copy()
 
 
-    def angle_shift(self) -> None:
+    def _angle_shift(self) -> None:
         """Make the angle betweem -90 and 90 degrees."""
         angles_c = self.cleaned_angles.copy()
         for i, ang in enumerate(angles_c):
@@ -86,7 +86,7 @@ class Analysis:
                 angles_c[i] = ang - 180
         self.cleaned_angles = angles_c.copy()
 
-    def linear_interpolation(self) -> None:
+    def _linear_interpolation(self) -> None:
         """Make a linear interpolation for the missing data."""
         angle_inter = list(self.cleaned_angles.copy())
         times_inter = [k / constants.FPS for k in range(int(min(self.times) * constants.FPS), int(max(self.times) * constants.FPS) + 1)]
@@ -101,13 +101,13 @@ class Analysis:
         self.times = times_inter.copy()
         self.cleaned_angles = angle_inter
 
-    def clean_data(self, window_size: float) -> None:
+    def _clean_data(self, window_size: float) -> None:
         """Prepare the data"""
-        self.angle_shift()
-        self.linear_interpolation()
-        self.smooth_angle(window_size)
+        self._angle_shift()
+        self._linear_interpolation()
+        self._smooth_angle(window_size)
 
-    def detect_extrema(self)-> None:
+    def _detect_extrema(self)-> None:
         """Detect the extrema of the angles."""
         angles = np.array(self.cleaned_angles)
         differences = angles[1: ] - angles[:- 1]
@@ -118,7 +118,7 @@ class Analysis:
         self.extrema = np.array(extrema)
 
 
-    def get_amplitude(self) -> None:
+    def _get_amplitude(self) -> None:
         """Give the cone angle from the extrema."""
         angles = self.extrema[:, 1]
         diff = angles[1:] - angles[:-1]
@@ -126,24 +126,24 @@ class Analysis:
         self.std_amplitude = np.std(np.abs(diff)) / 2
 
 
-    def get_period(self) -> Tuple[float, float]:
+    def _get_period(self) -> Tuple[float, float]:
         """Give the period from the extrema."""
         times = self.extrema[:, 0]
         diff = times[1:] - times[:-1]
         self.period = np.mean(np.abs(diff)) * 2
         self.std_period = np.std(np.abs(diff)) * 2
 
-    def run_analysis(self, visualization: bool) -> pd.Series:
+    def __call__(self, visualization: bool) -> pd.Series:
         """Run the analysis on the section of the data."""
         
 
-        self.clean_data(0.5)
-        self.detect_extrema()
+        self._clean_data(0.5)
+        self._detect_extrema()
         freq = get_frequencies(self.cleaned_angles)
         ft_angle = fourier_transform(self.cleaned_angles)
 
-        self.get_amplitude()
-        self.get_period()
+        self._get_amplitude()
+        self._get_period()
         self.mean_angle = np.mean(self.angles)
         self.fourier_mode = freq[ft_angle.index(1)]
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     data_list: List[pd.Series] = []
     for _, info in analysis_data.iterrows():
         analysis = Analysis(limits=get_limits(info["Limits"]), folder=info["Folder"])
-        data_list.append(analysis.run_analysis(visualization=False))
+        data_list.append(analysis(visualization=False))
 
     data = pd.DataFrame()
     data = pd.DataFrame(data_list)
