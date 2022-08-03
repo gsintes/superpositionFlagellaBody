@@ -46,13 +46,13 @@ class Analysis:
             angle = data[:, 1] 
         else:
             time = times
-            angle = angle
+            angle = angles
         self.limits = limits
         lim_track0 = int(round(min(time) * constants.FPS)) + limits[0]
         lim_track1 = int(round(min(time) * constants.FPS)) + limits[1]
         self.track_data: pd.DataFrame = load_track_data()[lim_track0: lim_track1]
         
-
+        self.window_size = 0.5
         self.times = time
         self.angles = angle.copy()
         self.times = self.times[limits[0]: limits[1]]
@@ -71,7 +71,7 @@ class Analysis:
             f = freq[i]
         ft_angle[i: ] = 0
         smooth_ang = list(np.fft.irfft(ft_angle))
-        if len(self.angles) % 2 == 1:
+        if len(self.cleaned_angles) % 2 == 1:
             smooth_ang.append(0)
         self.cleaned_angles = smooth_ang.copy()
 
@@ -101,22 +101,27 @@ class Analysis:
         self.times = times_inter.copy()
         self.cleaned_angles = angle_inter
 
-    def _clean_data(self, window_size: float) -> None:
-        """Prepare the data"""
+    def _clean_data(self) -> None:
+        """
+        Prepare the data.
+        
+        window_size: float : The timestep (in s) for smoothing.
+        """
         self._angle_shift()
         self._linear_interpolation()
-        self._smooth_angle(window_size)
+        self._smooth_angle(self.window_size)
+
 
     def _detect_extrema(self)-> None:
         """Detect the extrema of the angles."""
-        angles = np.array(self.cleaned_angles)
+        angles = np.array(self.cleaned_angles)[int(self.window_size * constants.FPS) : -int(self.window_size * constants.FPS)]
+        print(angles.shape)
         differences = angles[1: ] - angles[:- 1]
         extrema = []
         for i, diff in enumerate(differences[: - 1]):
             if diff * differences[i + 1] < 0:
-                extrema.append((self.times[i + 1], angles[i + 1]))
+                extrema.append((self.window_size + self.times[i + 1], angles[i + 1]))
         self.extrema = np.array(extrema)
-
 
     def _get_amplitude(self) -> None:
         """Give the cone angle from the extrema."""
@@ -135,9 +140,7 @@ class Analysis:
 
     def __call__(self, visualization: bool) -> pd.Series:
         """Run the analysis on the section of the data."""
-        
-
-        self._clean_data(0.5)
+        self._clean_data()
         self._detect_extrema()
         freq = get_frequencies(self.cleaned_angles)
         ft_angle = fourier_transform(self.cleaned_angles)
@@ -163,17 +166,20 @@ class Analysis:
 
         if visualization:
             plt.figure()
-            plt.plot(self.times, self.angles, "-")
+            plt.plot(self.times, self.cleaned_angles, "-", label="Smooth")
+            plt.plot(self.times, self.angles, "-", label="raw")
             plt.plot(self.extrema[:, 0], self.extrema[:, 1], "*r")
             plt.xlabel("Time (in s)")
             plt.ylabel("Angle (in degrees)")
-            plt.savefig(f"{self.folder}/angle.png")
+            plt.legend()
+            # plt.savefig(f"{self.folder}/angle.png")
 
             plt.figure()
             plt.plot(freq, ft_angle, label="smooth")
+            plt.plot(get_frequencies(self.angles), fourier_transform(self.angles))
             plt.xlabel("$f\ (in\ s^{-1})$")
-            plt.savefig(f"{self.folder}/fourier.png")
-            plt.close()
+            # plt.savefig(f"{self.folder}/fourier.png")
+            # plt.close()
             # plt.show(block=True)
         return data
 
@@ -187,26 +193,34 @@ def get_limits(lim_lit: str) -> Tuple[int, int]:
 
 
 if __name__ == "__main__":
-    analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    # analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
 
-    data_list: List[pd.Series] = []
-    for _, info in analysis_data.iterrows():
-        analysis = Analysis(limits=get_limits(info["Limits"]), folder=info["Folder"])
-        data_list.append(analysis(visualization=False))
+    # data_list: List[pd.Series] = []
+    # for _, info in analysis_data.iterrows():
+    #     analysis = Analysis(limits=get_limits(info["Limits"]), folder=info["Folder"])
+    #     data_list.append(analysis(visualization=True))
 
-    data = pd.DataFrame()
-    data = pd.DataFrame(data_list)
-    data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    # data = pd.DataFrame()
+    # data = pd.DataFrame(data_list)
+    # data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
     
-    data["Count_freq"] = 1 / data["Period"]
-    x = np.linspace(min(data["Fourier_mode"]), max(data["Fourier_mode"]))
-    plt.figure()
-    plt.plot(data["Fourier_mode"], data["Count_freq"], ".")
-    plt.plot(x, x, "k--")
-    plt.xlabel("Fourier frequency (Hz)")
-    plt.ylabel("Count frequency (Hz)")
+    # data["Count_freq"] = 1 / data["Period"]
+    # x = np.linspace(min(data["Fourier_mode"]), max(data["Fourier_mode"]))
+    # plt.figure()
+    # plt.plot(data["Fourier_mode"], data["Count_freq"], ".")
+    # plt.plot(x, x, "k--")
+    # plt.xlabel("Fourier frequency (Hz)")
+    # plt.ylabel("Count frequency (Hz)")
 
-    data.plot("Mean_vel", "Period", "scatter")
-    data.plot("Mean_vel", "Amplitude", "scatter")
-    data.plot("Period", "Amplitude", "scatter")
+    # data.plot("Mean_vel", "Period", "scatter")
+    # data.plot("Mean_vel", "Amplitude", "scatter")
+    # data.plot("Period", "Amplitude", "scatter")
+    # plt.show(block=True)
+
+    period = 1
+    amplitude = 3
+    X = np.linspace(0, 20, 1600)
+    Y = amplitude * np.sin(2 * np.pi * X / period)
+    ana = Analysis((0, 1500), angles=Y, times=X)
+    ana(True)
     plt.show(block=True)
