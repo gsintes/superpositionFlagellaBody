@@ -1,5 +1,6 @@
 """Mesure the angle between the body and the flagella along time."""
 
+from ast import Try
 import os
 from typing import Tuple, List
 
@@ -14,12 +15,10 @@ import superimpose
 import constants
 from trackParsing import load_track_data
 
-from makeTestIm import Ellipse, Rectangle
 
 class NoCenteredParticle(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
-
 
 
 def li_binarization(image: np.ndarray) -> np.ndarray:
@@ -28,9 +27,9 @@ def li_binarization(image: np.ndarray) -> np.ndarray:
     return 1 * (image > t)
 
 
-def pca(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
+def pca(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Return the main component of the detected region."""
-    M = np.cov(X, Y)
+    M = np.cov(x, y)
     val, vect = np.linalg.eig(M) 
     val = list(val)
     i = val.index(max(val))
@@ -72,110 +71,109 @@ def make_bin_im(X: np.ndarray, Y: np.ndarray, shape:Tuple[int, int]) -> np.ndarr
     return image
 
 
-def find_main_axis(x: np.ndarray, y: np.ndarray) -> Tuple[float, float]:
+def find_main_axis(x: np.ndarray, y: np.ndarray) -> Tuple[float, float, Tuple[float, float]]:
     """
     Find the main axis of a set of points using pca.
     
     Returns: a, b: coeff of the line : y = a * x + b
     """
     vect = pca(x, y)
-    a = vect[1] / vect[0]
-    b = np.mean(y) - a * np.mean(x)
-    return a, b
-
-
-def detect_body(
-    green_im: np.ndarray,
-    visualization: bool = False) -> Tuple[float, float]:
-    """Detect the body in the green image."""
-    footprint = morphology.disk(1)
-    res = morphology.white_tophat(green_im, footprint)
-    res = green_im - res
-    blur = gaussian(res, 1)
-   
-    bin_green = li_binarization(blur)
-    x, y, _ = keep_bigger_particle(bin_green, center=True)
-    bin_green = make_bin_im(x, y, bin_green.shape)
-    contour = measure.find_contours(bin_green, 0.4)[0]
-
-    X = np.array(list(zip(contour[:, 0], contour[:, 1])))
-
-    vect = pca(x, y)
     if vect[0] != 0:
         a = vect[1] / vect[0]
-        b = np.mean(y) - a * np.mean(x)
+    else: 
+        a =0
+    b = np.mean(y) - a * np.mean(x)
+    return a, b, vect
+
+
+class DetectionChecker:
+    """Does the image for checking axis detection."""
+    def __init__(self, image: np.ndarray, bin: np.ndarray, a: float, b: float) -> None:
+        self.image = image
+        self.a = a
+        self.b = b
+        self.bin = bin
+
+    def __call__(self) -> plt.Figure:
+        _, axis =plt.subplots(1, 3)
+        x = np.linspace(0, self.image.shape[0])
+        plt.suptitle("Flagella detection")
+        axis[0].set_ylim([self.image.shape[0], 0])
+        axis[0].set_xlim([0, self.image.shape[1]])
+        axis[0].imshow(self.image, cmap="gray")
+        axis[0].plot(self.a * x + self.b, x, "-r", linewidth=1)
+
+        axis[1].imshow(self.bin, cmap="gray")
+        axis[1].plot(self.a * x + self.b, x, "-r", linewidth=1)
+        axis[1].set_ylim([self.image.shape[0], 0])
+        axis[1].set_xlim([0, self.image.shape[1]])
+
+
+class AngleDetector:
+    """Does the detection of the angle."""
+    def __init__(self, super_imposed: np.ndarray, i: int, visualization: bool) -> None:
+        self.super_imposed = super_imposed
+        self.i = i
+        self.visualization = visualization
+
+        self.green_im = self.super_imposed[:, :, 1]
+        self.red_im = self.super_imposed[:, :, 0]
+
+    def detect_flagella(self, visualization: bool = False) -> Tuple[float, float, Tuple[float, float]]: 
+        """Detect the flagella in the red image."""
+        blur = gaussian(self.red_im, 2)
+        bin_red = li_binarization(blur)
+        x, y, _ = keep_bigger_particle(bin_red, center=False)
+        bin_red = make_bin_im(x, y, bin_red.shape)
+
+        a, b, vect = find_main_axis(x, y)
         if visualization:
-            _, axis =plt.subplots(nrows=1, ncols=3)
-            plt.suptitle("Body detection")
-            x = np.linspace(0, green_im.shape[0])
-            axis[0].imshow(green_im, cmap="gray")
-            axis[0].set_ylim([green_im.shape[0], 0])
-            axis[0].set_xlim([0, green_im.shape[1]])
-            axis[0].plot(a * x + b, x, "-g", linewidth=1)  
-            axis[1].imshow(bin_green, cmap="gray")
-            axis[1].set_ylim([green_im.shape[0], 0])
-            axis[1].set_xlim([0, green_im.shape[1]])
-            axis[1].plot(a * x + b, x, "-g", linewidth=1)  
+            checker = DetectionChecker(self.green_im, bin_red, a, b) 
+            checker()
         return a, b, vect
-    return 0, 0, vect
-
+        
+    def detect_body(self, visualization: bool = False) -> Tuple[float, float]:
+        """Detect the body in the green image."""
+        # footprint = morphology.disk(1)
+        # res = morphology.white_tophat(self.green_im, footprint)
+        # res = self.green_im - res
+        blur = gaussian(self.green_im, 1)
     
-def detect_flagella(
-    red_im: np.ndarray,
-    visualization: bool = False) -> Tuple[float, float]:
-    """Detect the flagella in the red image."""
-    blur = gaussian(red_im, 2)
-    bin_red = li_binarization(blur)
-    x, y, _ = keep_bigger_particle(bin_red, center=False)
-    bin_red = make_bin_im(x, y, bin_red.shape)
+        bin_green = li_binarization(blur)
+        x, y, _ = keep_bigger_particle(bin_green, center=True)
+        bin_green = make_bin_im(x, y, bin_green.shape)
 
-    vect = pca(x, y)
-    if vect[0] != 0:
-        a1 = vect[1] / vect[0]
-        b1 = np.mean(y) - a1 * np.mean(x)
+        a, b, vect = find_main_axis(x, y)
         if visualization:
-            _, axis =plt.subplots(1, 3)
-            plt.suptitle("Flagella detection")
-            axis[0].set_ylim([red_im.shape[0], 0])
-            axis[0].set_xlim([0, red_im.shape[1]])
-            axis[0].imshow(red_im, cmap="gray")
-            axis[0].plot(a1 * x + b1, x, "-r", linewidth=1)
-            axis[1].imshow(bin_red, cmap="gray")
-            axis[1].plot(a1 * x + b1, x, "-r", linewidth=1)
-            axis[1].set_ylim([red_im.shape[0], 0])
-            axis[1].set_xlim([0, red_im.shape[1]])
-        return a1, b1, vect
-    return 0, 0, vect
+            checker = DetectionChecker(self.green_im, bin_green, a, b) 
+            checker()
+        return a, b, vect
 
+    def __call__(self) -> float    :
+        """Detect the angle between the body and the flagella."""
+        try:
+            a0, b0, vect_body = self.detect_body(visualization=True)
+            a1, b1, vect_flagella = self.detect_flagella(visualization=False)
+        except NoCenteredParticle:
+            raise
+        x = np.linspace(0, self.super_imposed.shape[0])
 
+        ps = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
+        sin_theta = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
 
-def detect_angle(
-    super_imposed: np.ndarray,
-    i: int,
-    visualization: bool = False) ->  float:
-    """Detect the angle between the body and the flagella."""
-    try:
-        a0, b0, vect_body = detect_body(super_imposed[:, :, 1], visualization=False)
-        a1, b1, vect_flagella = detect_flagella(super_imposed[:, :, 0], visualization=False)
-    except NoCenteredParticle:
-        raise
-    x = np.linspace(0, super_imposed.shape[0])
-    ps = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
-
-    sin_theta = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
-    if visualization:
-        super_imposed_en = superimpose.contrast_enhancement(super_imposed)
-        plt.imshow(super_imposed_en)
-        plt.plot(a0 * x + b0, x, "-g", linewidth=1)
-        plt.plot(a1 * x + b1, x, "-r", linewidth=1)
-        plt.ylim([super_imposed.shape[0], 0])
-        plt.xlim([0, super_imposed.shape[1]])
-        # plt.draw()
-        plt.pause(0.001)
-        # plt.savefig(f"C:/Users/Kunyun/Desktop/Wobbling/{i}")      
-        plt.clf()
-        # plt.close() 
-    return np.sign(sin_theta) * np.arccos(ps)
+        if self.visualization:
+            super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
+            plt.imshow(super_imposed_en)
+            plt.plot(a0 * x + b0, x, "-g", linewidth=1)
+            plt.plot(a1 * x + b1, x, "-r", linewidth=1)
+            plt.ylim([self.super_imposed.shape[0], 0])
+            plt.xlim([0, self.super_imposed.shape[1]])
+            # plt.draw()
+            plt.pause(0.001)
+            # plt.savefig(f"C:/Users/Kunyun/Desktop/Wobbling/{i}")      
+            plt.clf()
+            plt.close() 
+        return np.sign(sin_theta) * np.arccos(ps)
 
 
 def save_data(time: List[int], angle: List[float], folder=constants.FOLDER) -> None:
@@ -194,7 +192,7 @@ def list_angle_detection(
     track_data = load_track_data()
     shift_y = - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2
     shift_x =  mire_info.displacement[0] - (constants.IM_SIZE[1] // 2)
-    angle = []
+    angles = []
     times = []
     stored = []
     for i, im_path in enumerate(image_list[:len(track_data)]):
@@ -212,17 +210,17 @@ def list_angle_detection(
             for l in range(super_imposed.shape[1]):
                 super_imposed[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
         try:
-            angle.append(180 * detect_angle(super_imposed, i, visualization) / np.pi)
+            detect_angle = AngleDetector(super_imposed, i, visualization)
+            angles.append(180 * detect_angle() / np.pi)
             times.append(i / constants.FPS)
         except NoCenteredParticle:
             pass
-    return times, angle
+    return times, angles
 
 
 if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
-    times, angle = list_angle_detection(image_list, window_size=20, visualization=False)    
-
+    times, angle = list_angle_detection(image_list, window_size=20, visualization=True)    
     save_data(times, angle, constants.FOLDER)
