@@ -97,14 +97,13 @@ class DetectionChecker:
     def __call__(self) -> plt.Figure:
         _, axis =plt.subplots(1, 3)
         x = np.linspace(0, self.image.shape[0])
-        plt.suptitle("Flagella detection")
         axis[0].set_ylim([self.image.shape[0], 0])
         axis[0].set_xlim([0, self.image.shape[1]])
         axis[0].imshow(self.image, cmap="gray")
-        axis[0].plot(self.a * x + self.b, x, "-r", linewidth=1)
+        axis[0].plot(self.a * x + self.b, x, "-b", linewidth=1)
 
         axis[1].imshow(self.bin, cmap="gray")
-        axis[1].plot(self.a * x + self.b, x, "-r", linewidth=1)
+        axis[1].plot(self.a * x + self.b, x, "-b", linewidth=1)
         axis[1].set_ylim([self.image.shape[0], 0])
         axis[1].set_xlim([0, self.image.shape[1]])
 
@@ -170,7 +169,7 @@ class AngleDetector:
             plt.xlim([0, self.super_imposed.shape[1]])
             # plt.draw()
             plt.pause(0.001)
-            # plt.savefig(f"C:/Users/Kunyun/Desktop/Wobbling/{i}")      
+            plt.savefig(f"/Users/sintes/Desktop/Wobbling1/{self.i}")      
             plt.clf()
             plt.close() 
         return np.sign(sin_theta) * np.arccos(ps)

@@ -166,8 +166,8 @@ class Analysis:
 
         if visualization:
             plt.figure()
-            plt.plot(self.cleaned_times, self.cleaned_angles, "-", label="Smooth")
             plt.plot(self.times, self.angles, "-", label="raw")
+            plt.plot(self.cleaned_times, self.cleaned_angles, "-", label="Smooth")
             plt.plot(self.extrema[:, 0], self.extrema[:, 1], "*r")
             plt.xlabel("Time (in s)")
             plt.ylabel("Angle (in degrees)")

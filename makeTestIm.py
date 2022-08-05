@@ -1,24 +1,26 @@
 """Make simple test images for displacement detection"""
 
 from typing import Tuple
-from abc import ABC, abstractmethod
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-class Mask(ABC):
-    @abstractmethod
+class Mask():
+    def __init__(self, center: Tuple[int, int], angle: float) -> None:
+        self.center = center
+        self.angle = angle
+    
     def make_im(self, im_shape: Tuple[int, int]) -> np.ndarray:
-        pass
+        raise NotImplementedError
 
 class Ellipse(Mask):
+    """Make an ellipsoidal mask."""
     def __init__(self,
     center: Tuple[int, int],
     angle: float,
     a: int,
     b: int) -> None:
-        self.center = center
-        self.angle = angle
+        Mask(center, angle)
         self.a = a
         self.b = b
 
@@ -39,6 +41,7 @@ class Ellipse(Mask):
         return im
 
 class Rectangle(Mask):
+    """Make a rectangular mask."""
     def __init__(self,
         length: int,
         width: int,
@@ -46,8 +49,7 @@ class Rectangle(Mask):
         angle: float) -> None:
         self.length = length
         self.width = width
-        self.center = center
-        self.angle = angle
+        Mask(center, angle)
     
     def make_im(self,im_shape: Tuple[int, int])-> np.ndarray:
         """Make a white ellispe in an image."""

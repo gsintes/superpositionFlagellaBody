@@ -1,7 +1,7 @@
 """Define the useful constants."""
 
 FOLDER_UP = "/Users/sintes/Desktop/Martyna/PhD/Flagelles/20-03-05_DSCG_AllData/20-03-05_DSCG12.63%_PVP_x63air_vernis_SlidesCoree_20umBeads" 
-FOLDER = "/Users/sintes/Desktop/Martyna/PhD/Flagelles/20-03-05_DSCG_AllData/20-03-05_DSCG12.63%_PVP_x63air_vernis_SlidesCoree_20umBeads/2020-03-05_16h21m19s"
+FOLDER = "/Users/sintes/Desktop/Martyna/PhD/Flagelles/20-03-05_DSCG_AllData/20-03-05_DSCG12.63%_PVP_x63air_vernis_SlidesCoree_20umBeads/2020-03-05_16h38m01s"
 
 IM_SIZE = (1024, 1024)
 FPS = 80
