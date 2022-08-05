@@ -1,25 +1,17 @@
 """Make simple test images for displacement detection"""
 
 from typing import Tuple
+from abc import ABC, abstractmethod
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-def make_square_im(
-    top_left_corner: Tuple[int, int],
-    im_shape: Tuple[int, int],
-    square_size: int) -> np.ndarray:
-    """Make a white full square in an image."""
+class Mask(ABC):
+    @abstractmethod
+    def make_im(self, im_shape: Tuple[int, int]) -> np.ndarray:
+        pass
 
-    im = np.zeros(im_shape)
-    for i in range(im_shape[0]):
-        for j in range(im_shape[1]):
-            if top_left_corner[0] <= i < top_left_corner[0] + square_size:
-                if top_left_corner[1] <= j < top_left_corner[1] + square_size:
-                    im[i, j] = 1
-    return im
-
-class Ellipse:
+class Ellipse(Mask):
     def __init__(self,
     center: Tuple[int, int],
     angle: float,
@@ -30,7 +22,7 @@ class Ellipse:
         self.a = a
         self.b = b
 
-    def make_im(self,im_shape: Tuple[int, int])-> np.ndarray:
+    def make_im(self,im_shape: Tuple[int, int]) -> np.ndarray:
         """Make a white ellispe in an image."""
         x0 = self.center[0]
         y0 = self.center[1]
@@ -46,7 +38,7 @@ class Ellipse:
                     im[x, y] = 1
         return im
 
-class Rectangle:
+class Rectangle(Mask):
     def __init__(self,
         length: int,
         width: int,
