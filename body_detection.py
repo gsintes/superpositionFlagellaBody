@@ -1,8 +1,7 @@
 """Detect the body using convolution techniques."""
 
-from curses.textpad import rectangle
 import os
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -10,7 +9,7 @@ import matplotlib.image as mpim
 
 from utils import timeit
 from makeTestIm import Mask, Rectangle
-import makeTestIm as masks
+
 import angleBodyFlagella as abf
 import constants
 import superimpose
@@ -30,13 +29,13 @@ def center_of_mass(image: np.ndarray) -> Tuple[int, int]:
 
 class Convoluter:
     """Does convolution between a mask and an image."""
-    def __init__(self, image: np.ndarray, mask: Mask) -> None:
+    def __init__(self, image: np.ndarray, mask: Mask, visuali) -> None:
         self.image = image
         self.mask = mask
         self.mask.center = (image.shape[0] // 2, image.shape[1] // 2)
         self.mask_im = self.mask.make_im(self.image.shape)
         
-    def __call__(self) -> np.ndarray:
+    def __call__(self, visualization : bool = False) -> np.ndarray:
         """Does the convolution product between the image and the mask."""
         ft_im = np.fft.rfft2(self.image)
         ft_mask = np.fft.rfft2(self.mask_im)
@@ -46,6 +45,9 @@ class Convoluter:
         for x in range(conv.shape[0]):
             for y in range(conv.shape[1]):
                 conv_shift[(x + self.mask.center[0]) % conv.shape[0], (y + self.mask.center[1]) % conv.shape[1]] = conv[x, y]
+        if visualization:
+            plt.figure()
+            plt.imshow(conv_shift.transpose())
         return conv_shift
 
 class BodyDetection:
@@ -56,10 +58,10 @@ class BodyDetection:
         self.a = a 
         self.b = b
 
-    def detection(self, step=10, lim=180) -> None:
+    def detection(self, step: int = 10, lim: int = 180, visualization: bool = False) -> None:
         """Does a detection of the object with step in angle."""
-        angles = []
-        convolutions = []
+        angles: List[int] = []
+        convolutions: List[np.array] = []
         while self.angle < lim:
             convoluter = Convoluter(self.image, Rectangle(self.a, self.b, (0, 0), self.angle * np.pi / 180))
             angles.append(self.angle)
@@ -68,7 +70,8 @@ class BodyDetection:
         sum = np.zeros(self.image.shape)
         for conv in convolutions:
             sum += conv
-        self.center = center_of_mass(sum)
+        bin_sum = abf.li_binarization(sum)
+        self.center = center_of_mass(bin_sum)
         self.best_angle = 0
         max = 0
         for i, conv in enumerate(convolutions):
@@ -76,8 +79,13 @@ class BodyDetection:
             if val > max:
                 max = val
                 self.best_angle = angles[i]
+        
+        if visualization:
+            plt.figure()
+            plt.imshow(sum.transpose())
+
     @timeit
-    def __call__(self, visualization=False) -> int:
+    def __call__(self, visualization=False) -> Mask:
         """Does a detection of the body with rough then precise angle detection."""
         self.detection()
         self.angle = self.best_angle - 10
@@ -89,29 +97,33 @@ class BodyDetection:
             plt.figure()
             plt.imshow(self.image.transpose(), cmap="gray")
             plt.plot(X, Y, ".r", markersize=2)
-            plt.savefig(f"/Users/sintes/Desktop/Test/{angle}.png")
+            plt.savefig(f"/Users/sintes/Desktop/Test/detection_check.png")
             plt.close()
             # plt.show(block=True)
 
-        return self.best_angle
+        return Rectangle(self.a, self.b, self.center, np.pi * self.best_angle / 180)
 
 if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
-    image = mpim.imread(image_list[2])
+    image = mpim.imread(image_list[300])
     super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
     super_imposed = superimpose.select_center_image(super_imposed, 100) 
-
     image = super_imposed[:, :, 1]
-    res = []
-    for angle in range(0, 180):
-        print(angle)
-        IMAGE = masks.Rectangle(length=40, width=6, center=(100, 100), angle=angle * np.pi / 180).make_im((200, 200))
 
-        bd = BodyDetection(IMAGE, 40, 6)
-        res.append(bd(visualization=True))
-    delta = np.array([res[i] - i for i in range(0, 180)])
-    print(res)
-    print(delta)
-    print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
+    bd = BodyDetection(image, 40, 7)
+    bd(visualization=True)
+
+    
+    # res = []
+    # for angle in range(0, 180):
+    #     print(angle)
+    #     IMAGE = Rectangle(length=40, width=7, center=(100, 100), angle=angle * np.pi / 180).make_im((200, 200))
+
+    #     bd = BodyDetection(IMAGE, 40, 6)
+    #     res.append(bd(visualization=False))
+    # delta = np.array([res[i] - i for i in range(0, 180)])
+    # print(res)
+    # print(delta)
+    # print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
