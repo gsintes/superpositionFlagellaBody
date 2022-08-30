@@ -3,7 +3,7 @@
 import time
 
 
-def timit(func):
+def timeit(func):
     """Timing decorator."""
     def wrapper(*arg, **kw):
         t1 = time.time()

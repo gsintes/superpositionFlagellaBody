@@ -1,6 +1,6 @@
 """Make simple test images for displacement detection"""
 
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ class Ellipse(Mask):
     angle: float,
     a: int,
     b: int) -> None:
-        Mask(center, angle)
+        super().__init__(center, angle)
         self.a = a
         self.b = b
 
@@ -49,7 +49,7 @@ class Rectangle(Mask):
         angle: float) -> None:
         self.length = length
         self.width = width
-        Mask(center, angle)
+        super().__init__(center, angle)
     
     def make_im(self,im_shape: Tuple[int, int])-> np.ndarray:
         """Make a white ellispe in an image."""
@@ -57,18 +57,40 @@ class Rectangle(Mask):
         y0 = self.center[1]
 
         x0p = np.cos(self.angle) * x0 + np.sin(self.angle) * y0
-        y0p = - np.sin(self.angle) * x0 + np.cos(self.angle) * x0
+        y0p = - np.sin(self.angle) * x0 + np.cos(self.angle) * y0
 
         im = np.zeros(im_shape)
         for x in range(im_shape[0]):
             for y in range(im_shape[1]):
                 xp = np.cos(self.angle) * x + np.sin(self.angle) * y
                 yp = - np.sin(self.angle) * x + np.cos(self.angle) * y 
-                if -self.length < xp - x0p < self.length // 2:
-                    if -self.width < yp - y0p < self.width // 2:
+                if - self.length // 2 < (xp - x0p) < self.length // 2:
+                    if - self.width // 2 < yp - y0p < self.width // 2:
                         im[x, y] = 1
         return im
+    
+    def border(self,im_shape: Tuple[int, int])-> Tuple[List[int], List[int]]:
+        """Give the border of the rectangle."""
+        x0 = self.center[0]
+        y0 = self.center[1]
 
+        x0p = np.cos(self.angle) * x0 + np.sin(self.angle) * y0
+        y0p = - np.sin(self.angle) * x0 + np.cos(self.angle) * y0
+        X = []
+        Y = []
+        for x in range(im_shape[0]):
+            for y in range(im_shape[1]):
+                xp = np.cos(self.angle) * x + np.sin(self.angle) * y
+                yp = - np.sin(self.angle) * x + np.cos(self.angle) * y 
+                if self.length / 2 - 0.5 <= np.abs(xp - x0p) <= self.length / 2 + 0.5:
+                    if np.abs(yp - y0p) <= self.width // 2:
+                        X.append(x)
+                        Y.append(y)
+                if self.width / 2 - 0.5 <= np.abs(yp - y0p) <= self.width / 2 + 0.5:
+                    if np.abs(xp - x0p) <= self.length // 2 + 0.5:
+                        X.append(x)
+                        Y.append(y)
+        return X, Y
 
 
 if __name__ == "__main__":

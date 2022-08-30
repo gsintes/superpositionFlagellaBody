@@ -1,6 +1,5 @@
 """Mesure the angle between the body and the flagella along time."""
 
-from ast import Try
 import os
 from typing import Tuple, List
 
