@@ -1,5 +1,6 @@
 """Mesure the angle between the body and the flagella along time."""
 
+from curses.textpad import rectangle
 import os
 from typing import Tuple, List
 
@@ -9,10 +10,12 @@ import numpy as np
 from skimage import morphology, measure
 from skimage.filters import gaussian
 from skimage.filters.thresholding import threshold_li
+from makeTestIm import Rectangle
 
 import superimpose
 import constants
 from trackParsing import load_track_data
+import body_detection as bd
 
 
 class NoCenteredParticle(Exception):
@@ -87,11 +90,12 @@ def find_main_axis(x: np.ndarray, y: np.ndarray) -> Tuple[float, float, Tuple[fl
 
 class DetectionChecker:
     """Does the image for checking axis detection."""
-    def __init__(self, image: np.ndarray, bin: np.ndarray, a: float, b: float) -> None:
+    def __init__(self, image: np.ndarray, bin: np.ndarray, a: float, b: float, rectangle: Rectangle=None) -> None:
         self.image = image
         self.a = a
         self.b = b
         self.bin = bin
+        self.rectangle = rectangle
 
     def __call__(self) -> plt.Figure:
         _, axis =plt.subplots(1, 3)
@@ -100,11 +104,16 @@ class DetectionChecker:
         axis[0].set_xlim([0, self.image.shape[1]])
         axis[0].imshow(self.image, cmap="gray")
         axis[0].plot(self.a * x + self.b, x, "-b", linewidth=1)
-
+        
         axis[1].imshow(self.bin, cmap="gray")
         axis[1].plot(self.a * x + self.b, x, "-b", linewidth=1)
         axis[1].set_ylim([self.image.shape[0], 0])
         axis[1].set_xlim([0, self.image.shape[1]])
+
+        if self.rectangle is not None:
+            X, Y = self.rectangle.border((200, 200))
+            axis[0].plot(Y, X, ".r", markersize=2)
+            axis[1].plot(Y, X, ".r", markersize=2)
 
 
 class AngleDetector:
@@ -132,18 +141,16 @@ class AngleDetector:
         
     def detect_body(self, visualization: bool = False) -> Tuple[float, float]:
         """Detect the body in the green image."""
-        # footprint = morphology.disk(1)
-        # res = morphology.white_tophat(self.green_im, footprint)
-        # res = self.green_im - res
-        blur = gaussian(self.green_im, 1)
+        detector = bd.BodyDetection(self.green_im, a=40, b=7)
+        rectangle = detector(False)
     
-        bin_green = li_binarization(blur)
+        bin_green = rectangle.make_im((200, 200))
         x, y, _ = keep_bigger_particle(bin_green, center=True)
         bin_green = make_bin_im(x, y, bin_green.shape)
 
         a, b, vect = find_main_axis(x, y)
         if visualization:
-            checker = DetectionChecker(self.green_im, bin_green, a, b) 
+            checker = DetectionChecker(self.green_im, bin_green, a, b, rectangle=rectangle) 
             checker()
         return a, b, vect
 
@@ -167,7 +174,7 @@ class AngleDetector:
             plt.ylim([self.super_imposed.shape[0], 0])
             plt.xlim([0, self.super_imposed.shape[1]])
             # plt.draw()
-            plt.pause(0.001)
+            # plt.pause(0.001)
             plt.savefig(f"/Users/sintes/Desktop/Wobbling1/{self.i}")      
             plt.clf()
             plt.close() 

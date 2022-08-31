@@ -29,7 +29,7 @@ def center_of_mass(image: np.ndarray) -> Tuple[int, int]:
 
 class Convoluter:
     """Does convolution between a mask and an image."""
-    def __init__(self, image: np.ndarray, mask: Mask, visuali) -> None:
+    def __init__(self, image: np.ndarray, mask: Mask) -> None:
         self.image = image
         self.mask = mask
         self.mask.center = (image.shape[0] // 2, image.shape[1] // 2)
@@ -84,7 +84,6 @@ class BodyDetection:
             plt.figure()
             plt.imshow(sum.transpose())
 
-    @timeit
     def __call__(self, visualization=False) -> Mask:
         """Does a detection of the body with rough then precise angle detection."""
         self.detection()
@@ -97,9 +96,9 @@ class BodyDetection:
             plt.figure()
             plt.imshow(self.image.transpose(), cmap="gray")
             plt.plot(X, Y, ".r", markersize=2)
-            plt.savefig(f"/Users/sintes/Desktop/Test/detection_check.png")
-            plt.close()
-            # plt.show(block=True)
+            # plt.savefig(f"/Users/sintes/Desktop/Test/detection_check.png")
+            # plt.close()
+            plt.show(block=True)
 
         return Rectangle(self.a, self.b, self.center, np.pi * self.best_angle / 180)
 
@@ -107,7 +106,7 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
-    image = mpim.imread(image_list[300])
+    image = mpim.imread(image_list[1300])
     super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
     super_imposed = superimpose.select_center_image(super_imposed, 100) 
     image = super_imposed[:, :, 1]
@@ -119,10 +118,10 @@ if __name__ == "__main__":
     # res = []
     # for angle in range(0, 180):
     #     print(angle)
-    #     IMAGE = Rectangle(length=40, width=7, center=(100, 100), angle=angle * np.pi / 180).make_im((200, 200))
+    #     IMAGE = Rectangle(length=40, width=7, center=(50, 70), angle=angle * np.pi / 180).make_im((200, 200))
 
     #     bd = BodyDetection(IMAGE, 40, 6)
-    #     res.append(bd(visualization=False))
+    #     res.append(int(bd(visualization=True).angle * 180 / np.pi))
     # delta = np.array([res[i] - i for i in range(0, 180)])
     # print(res)
     # print(delta)
