@@ -16,6 +16,7 @@ import superimpose
 import constants
 from trackParsing import load_track_data
 import body_detection as bd
+from utils import timeit
 
 
 class NoCenteredParticle(Exception):
@@ -138,7 +139,7 @@ class AngleDetector:
             checker = DetectionChecker(self.green_im, bin_red, a, b) 
             checker()
         return a, b, vect
-        
+
     def detect_body(self, visualization: bool = False) -> Tuple[float, float]:
         """Detect the body in the green image."""
         detector = bd.BodyDetection(self.green_im, a=40, b=7)
@@ -157,7 +158,7 @@ class AngleDetector:
     def __call__(self) -> float    :
         """Detect the angle between the body and the flagella."""
         try:
-            a0, b0, vect_body = self.detect_body(visualization=True)
+            a0, b0, vect_body = self.detect_body(visualization=self.visualization)
             a1, b1, vect_flagella = self.detect_flagella(visualization=False)
         except NoCenteredParticle:
             raise
@@ -176,49 +177,51 @@ class AngleDetector:
             # plt.draw()
             # plt.pause(0.001)
             plt.savefig(f"/Users/sintes/Desktop/Wobbling1/{self.i}")      
-            plt.clf()
+            # plt.clf()
             plt.close() 
         return np.sign(sin_theta) * np.arccos(ps)
 
 
-def save_data(time: List[int], angle: List[float], folder=constants.FOLDER) -> None:
+def save_data(angles: List[Tuple[float, float]], folder=constants.FOLDER) -> None:
     """Save the data to a text file."""
     textfile = open(os.path.join(folder, "angle_body_flagella.csv"), "w")
-    for i in range(len(time)):
-        textfile.write(f"{time[i]}, {angle[i]}\n")
+    for i in range(len(angles)):
+        textfile.write(f"{angles[i][0]}, {angles[i][1]}\n")
     textfile.close()
 
+class Info:
+    def __init__(self, mire_info: superimpose.MireInfo) -> None:
+        self.track_data = load_track_data()
+        self.mire_info = mire_info
+        self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
+         - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2)
+
+
+def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
+    """Run the analysis on an image."""
+    im_test = mpim.imread(image_path) 
+    im_test = im_test / 2 ** 16
+    delta_x = int(info.track_data["center_x"][i]) + info.shift[0]
+    delta_y = int(info.track_data["center_y"][i]) + info.shift[0]
+    super_imposed = superimpose.shift_image(superimpose.superposition(im_test,info.mire_info),(-delta_x, -delta_y))
+    super_imposed = superimpose.select_center_image(super_imposed, 100) 
+    detect_angle = AngleDetector(super_imposed, i, visualization)
+    return (i / constants.FPS, 180 * detect_angle() / np.pi)
 
 def list_angle_detection(
-    image_list: List[str],
-    window_size: int,
+    image_list: List[str], 
     visualization: bool = False) -> Tuple[List[float], List[float]]:
     """Run the angle detection on a list of path and return angle and time."""
-    track_data = load_track_data()
-    shift_y = - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2
-    shift_x =  mire_info.displacement[0] - (constants.IM_SIZE[1] // 2)
-    angles = []
-    times = []
-    for i, im_path in enumerate(image_list[:len(track_data)]):
-        im_test = mpim.imread(im_path) 
-        im_test = im_test / 2 ** 16
-        delta_x = int(track_data["center_x"][i]) + shift_x
-        delta_y = int(track_data["center_y"][i]) + shift_y 
-        super_imposed = superimpose.shift_image(superimpose.superposition(im_test, mire_info),(-delta_x, -delta_y))
-        super_imposed = superimpose.select_center_image(super_imposed, 100) 
-
-        try:
-            detect_angle = AngleDetector(super_imposed, i, visualization)
-            angles.append(180 * detect_angle() / np.pi)
-            times.append(i / constants.FPS)
-        except NoCenteredParticle:
-            pass
-    return times, angles
+    info = Info(mire_info)
+    pool = mp.Pool(mp.cpu_count() - 1)
+    angles = pool.starmap_async(analyse_image, [(i, image_path, info, visualization) for i, image_path in enumerate(image_list[:len(info.track_data)])]).get()
+    pool.close()
+    return angles
 
 
 if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
-    times, angle = list_angle_detection(image_list, window_size=20, visualization=True)    
-    save_data(times, angle, constants.FOLDER)
+    angles = list_angle_detection(image_list, visualization=False)    
+    save_data(angles, constants.FOLDER)

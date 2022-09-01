@@ -113,17 +113,15 @@ if __name__ == "__main__":
 
     # bd = BodyDetection(image, 40, 7)
     # bd(visualization=True)
-    @timeit
-    def test():
-        res = []
-        for angle in range(0, 180):
-            print(angle)
-            IMAGE = Rectangle(length=40, width=7, center=(50, 70), angle=angle * np.pi / 180).make_im((200, 200))
 
-            bd = BodyDetection(IMAGE, 40, 6)
-            res.append(int(bd(visualization=False).angle * 180 / np.pi))
-        delta = np.array([res[i] - i for i in range(0, 180)])
-        print(res)
-        print(delta)
-        print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
-    test()
+    res = []
+    for angle in range(0, 180):
+        print(angle)
+        IMAGE = Rectangle(length=40, width=7, center=(50, 70), angle=angle * np.pi / 180).make_im((200, 200))
+
+        bd = BodyDetection(IMAGE, 40, 6)
+        res.append(int(bd(visualization=False).angle * 180 / np.pi))
+    delta = np.array([res[i] - i for i in range(0, 180)])
+    print(res)
+    print(delta)
+    print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
