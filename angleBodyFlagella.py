@@ -1,13 +1,13 @@
 """Mesure the angle between the body and the flagella along time."""
 
-from curses.textpad import rectangle
+import multiprocessing as mp
 import os
 from typing import Tuple, List
 
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage import morphology, measure
+from skimage import measure
 from skimage.filters import gaussian
 from skimage.filters.thresholding import threshold_li
 from makeTestIm import Rectangle
@@ -145,7 +145,7 @@ class AngleDetector:
         rectangle = detector(False)
     
         bin_green = rectangle.make_im((200, 200))
-        x, y, _ = keep_bigger_particle(bin_green, center=True)
+        x, y, _ = keep_bigger_particle(bin_green, center=False)
         bin_green = make_bin_im(x, y, bin_green.shape)
 
         a, b, vect = find_main_axis(x, y)
@@ -199,7 +199,6 @@ def list_angle_detection(
     shift_x =  mire_info.displacement[0] - (constants.IM_SIZE[1] // 2)
     angles = []
     times = []
-    stored = []
     for i, im_path in enumerate(image_list[:len(track_data)]):
         im_test = mpim.imread(im_path) 
         im_test = im_test / 2 ** 16
@@ -207,13 +206,7 @@ def list_angle_detection(
         delta_y = int(track_data["center_y"][i]) + shift_y 
         super_imposed = superimpose.shift_image(superimpose.superposition(im_test, mire_info),(-delta_x, -delta_y))
         super_imposed = superimpose.select_center_image(super_imposed, 100) 
-        
-        stored.append(super_imposed.copy())
-        if i >= window_size:
-            stored.pop(0)
-        for k in range(super_imposed.shape[0]):
-            for l in range(super_imposed.shape[1]):
-                super_imposed[k, l, 1] = np.mean([image[k,l, 1] for image in stored])
+
         try:
             detect_angle = AngleDetector(super_imposed, i, visualization)
             angles.append(180 * detect_angle() / np.pi)

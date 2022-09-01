@@ -103,26 +103,27 @@ class BodyDetection:
         return Rectangle(self.a, self.b, self.center, np.pi * self.best_angle / 180)
 
 if __name__ == "__main__":
-    mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
+    # mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
-    image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
-    image = mpim.imread(image_list[1300])
-    super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
-    super_imposed = superimpose.select_center_image(super_imposed, 100) 
-    image = super_imposed[:, :, 1]
+    # image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
+    # image = mpim.imread(image_list[1300])
+    # super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
+    # super_imposed = superimpose.select_center_image(super_imposed, 100) 
+    # image = super_imposed[:, :, 1]
 
-    bd = BodyDetection(image, 40, 7)
-    bd(visualization=True)
+    # bd = BodyDetection(image, 40, 7)
+    # bd(visualization=True)
+    @timeit
+    def test():
+        res = []
+        for angle in range(0, 180):
+            print(angle)
+            IMAGE = Rectangle(length=40, width=7, center=(50, 70), angle=angle * np.pi / 180).make_im((200, 200))
 
-    
-    # res = []
-    # for angle in range(0, 180):
-    #     print(angle)
-    #     IMAGE = Rectangle(length=40, width=7, center=(50, 70), angle=angle * np.pi / 180).make_im((200, 200))
-
-    #     bd = BodyDetection(IMAGE, 40, 6)
-    #     res.append(int(bd(visualization=True).angle * 180 / np.pi))
-    # delta = np.array([res[i] - i for i in range(0, 180)])
-    # print(res)
-    # print(delta)
-    # print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
+            bd = BodyDetection(IMAGE, 40, 6)
+            res.append(int(bd(visualization=False).angle * 180 / np.pi))
+        delta = np.array([res[i] - i for i in range(0, 180)])
+        print(res)
+        print(delta)
+        print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
+    test()
