@@ -1,7 +1,12 @@
 """Define the useful constants."""
 
-FOLDER_UP = "/Users/sintes/Desktop/Martyna/PhD/Flagelles/20-03-05_DSCG_AllData/20-03-05_DSCG12.63%_PVP_x63air_vernis_SlidesCoree_20umBeads" 
-FOLDER = "/Users/sintes/Desktop/Martyna/PhD/Flagelles/20-03-05_DSCG_AllData/20-03-05_DSCG12.63%_PVP_x63air_vernis_SlidesCoree_20umBeads/2020-03-05_16h38m01s"
+import os
+
+FOLDER_UP = "/Users/sintes/Desktop/Martyna/PhD/Ficoll/Ficoll17%_20-11-05_1uLbactos_TRACKING" 
+FOLDER_NUM = "2020-11-05_13h11m56s"
+
+FIG_FOLDER = os.path.join(FOLDER_UP, "Wobbling", FOLDER_NUM)
+FOLDER = os.path.join(FOLDER_UP, FOLDER_NUM)
 
 IM_SIZE = (1024, 1024)
 FPS = 80
