@@ -24,7 +24,9 @@ def center_of_mass(image: np.ndarray) -> Tuple[int, int]:
             x_sum += x * image[x, y]
             y_sum +=  y * image[x, y]
             wtot += image[x, y]
-    return (int(x_sum / wtot), int(y_sum / wtot))
+    if wtot != 0:
+        return (int(x_sum / wtot), int(y_sum / wtot))
+    return (100, 100)
 
 
 class Convoluter:

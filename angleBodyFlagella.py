@@ -2,6 +2,7 @@
 
 import multiprocessing as mp
 import os
+from tkinter.messagebox import NO
 from typing import Tuple, List
 
 import matplotlib.image as mpim
@@ -16,7 +17,6 @@ import superimpose
 import constants
 from trackParsing import load_track_data
 import body_detection as bd
-from utils import timeit
 
 
 class NoCenteredParticle(Exception):
@@ -178,7 +178,7 @@ class AngleDetector:
             # plt.pause(0.001)
             plt.savefig(os.path.join(constants.FIG_FOLDER, f"{self.i}.png"))    
             # plt.clf()
-            plt.close() 
+            plt.close("all") 
         return np.sign(sin_theta) * np.arccos(ps)
 
 
@@ -205,8 +205,11 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
     delta_y = int(info.track_data["center_y"][i]) + info.shift[1]
     super_imposed = superimpose.shift_image(superimpose.superposition(im_test,info.mire_info),(-delta_x, -delta_y))
     super_imposed = superimpose.select_center_image(super_imposed, 100) 
-    detect_angle = AngleDetector(super_imposed, i, visualization)
-    return (i / constants.FPS, 180 * detect_angle() / np.pi)
+    try:
+        detect_angle = AngleDetector(super_imposed, i, visualization)
+        return (i / constants.FPS, 180 * detect_angle() / np.pi)
+    except NoCenteredParticle:
+        return (0, 0)
 
 def list_angle_detection(
     image_list: List[str], 
@@ -220,10 +223,14 @@ def list_angle_detection(
 
 
 if __name__ == "__main__":
-
-    os.makedirs(constants.FIG_FOLDER)
+    visualization = False
+    if visualization:
+        try:
+            os.makedirs(constants.FIG_FOLDER)
+        except FileExistsError:
+            pass
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
 
-    angles = list_angle_detection(image_list, visualization=True)    
+    angles = list_angle_detection(image_list, visualization=visualization)    
     save_data(angles, constants.FOLDER)
