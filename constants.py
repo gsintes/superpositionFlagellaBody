@@ -3,7 +3,7 @@
 import os
 
 FOLDER_UP = "Z:/PhD/Ficoll/Ficoll17%_20-11-05_1uLbactos_TRACKING" 
-FOLDER_NUM = "2020-11-05_13h14m21s"
+FOLDER_NUM = "2020-11-05_13h17m22s"
 
 FIG_FOLDER = os.path.join(FOLDER_UP, "Wobbling", FOLDER_NUM)
 FOLDER = os.path.join(FOLDER_UP, FOLDER_NUM)
