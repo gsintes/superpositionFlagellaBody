@@ -85,6 +85,7 @@ class BodyDetection:
         if visualization:
             plt.figure()
             plt.imshow(sum.transpose())
+            plt.plot(self.center[0], self.center[1], "ro", markersize=2)
 
     def __call__(self, visualization=False) -> Mask:
         """Does a detection of the body with rough then precise angle detection."""
