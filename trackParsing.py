@@ -63,9 +63,9 @@ def smooth_derivative(vector: Iterable, step_size: float) -> Iterable:
 
 def calculate_velocities(data: pd.DataFrame) -> pd.DataFrame:
     """Calculate the velocities and add them to a new dataframe."""
-    data["vel_x"] = 1000 * smooth_derivative(data["smooth_x"], constants.FPS)
-    data["vel_y"] = 1000 * smooth_derivative(data["smooth_y"], constants.FPS)
-    data["vel_z"] = 1000 * smooth_derivative(data["smooth_z"], constants.FPS)
+    data["vel_x"] = smooth_derivative(data["smooth_x"], 1 / constants.FPS)
+    data["vel_y"] = smooth_derivative(data["smooth_y"], 1 / constants.FPS)
+    data["vel_z"] = smooth_derivative(data["smooth_z"], 1 / constants.FPS)
 
     data["vel"] = np.sqrt(data["vel_x"] ** 2 + data["vel_y"] ** 2 + data["vel_z"] ** 2)
     data["slope"] = - data["vel_x"] / data["vel_y"]

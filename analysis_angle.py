@@ -7,7 +7,6 @@ from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from scipy import signal
 
 import constants
 from trackParsing import load_track_data
@@ -32,6 +31,7 @@ def get_frequencies(signal: List[int], frame_rate: int = constants.FPS ) -> List
     return freq
 
 class Analysis:
+    count_data = 0
     def __init__(self,
         limits: Tuple[int, int],
         folder: str = "",
@@ -40,6 +40,8 @@ class Analysis:
         times: List[float]=[]
         ) -> None:
         """Load the angle data."""
+
+        Analysis.count_data += 1
         self.folder = folder
         if folder != "":
             data = np.genfromtxt(os.path.join(folder, data_file), delimiter=",")
@@ -61,16 +63,14 @@ class Analysis:
         self.cleaned_angles = self.angles.copy()
 
 
-    def _smooth_angle(self, window_time: float) -> None:
+    def _smooth_angle(self) -> None:
         """Smooth the angle on a timescale window_time in secondes by FT cutting."""
-        freq = get_frequencies(self.cleaned_angles)
         ft_angle = np.fft.rfft(self.cleaned_angles)
-        i = 0
-        f = freq[0]
-        while f < 1 / window_time:
-            i += 1
-            f = freq[i]
-        ft_angle[i: ] = 0
+        spectrum = np.abs(ft_angle)
+
+        for i, _ in enumerate(ft_angle):
+            if spectrum[i] < 0.15 * max(spectrum):
+                ft_angle[i] = 0
         smooth_ang = list(np.fft.irfft(ft_angle))
         if len(self.cleaned_angles) % 2 == 1:
             smooth_ang.append(0)
@@ -110,17 +110,27 @@ class Analysis:
         """
         self._angle_shift()
         self._linear_interpolation()
-        self._smooth_angle(self.window_size)
+        self._smooth_angle()
 
 
     def _detect_extrema(self)-> None:
         """Detect the extrema of the angles."""
-        angles = np.array(self.cleaned_angles)[int(self.window_size * constants.FPS) : -int(self.window_size * constants.FPS)]
+        angles = np.array(self.cleaned_angles)
         differences = angles[1: ] - angles[:- 1]
         extrema = []
         for i, diff in enumerate(differences[: - 1]):
             if diff * differences[i + 1] < 0:
-                extrema.append((self.window_size + self.cleaned_times[i + 1], angles[i + 1]))
+                extrema.append((self.cleaned_times[i + 1], angles[i + 1]))
+        extrema_a = np.array(extrema)
+            
+
+        diff = extrema_a[1:, 0] - extrema_a[:-1, 0]
+        th_diff = 0.6 * np.mean(diff)
+        count = 0
+        for i in range(len(diff)):
+            if diff[i] < th_diff:
+                count += 1
+                extrema.pop(i + 1 - count)
         self.extrema = np.array(extrema)
 
     def _get_amplitude(self) -> None:
@@ -138,7 +148,7 @@ class Analysis:
         self.period = np.mean(np.abs(diff)) * 2
         self.std_period = np.std(np.abs(diff)) * 2
 
-    def __call__(self, visualization: bool) -> pd.Series:
+    def __call__(self, visualization: bool) -> pd.Series: 
         """Run the analysis on the section of the data."""
         self._clean_data()
         self._detect_extrema()
@@ -172,14 +182,20 @@ class Analysis:
             plt.xlabel("Time (in s)")
             plt.ylabel("Angle (in degrees)")
             plt.legend()
-            # plt.savefig(f"{self.folder}/angle.png")
+            plt.savefig(f"{constants.FOLDER_UP}/Wobbling/angle_{Analysis.count_data}.png")
+            plt.close()
 
             plt.figure()
+            ft_angle = fourier_transform(self.angles)
+            spectrum = np.abs(ft_angle) / max(np.abs(ft_angle))
+            plt.plot(get_frequencies(self.angles), spectrum, label="Raw")
+            ft_angle = fourier_transform(self.cleaned_angles)
+            spectrum = np.abs(ft_angle) / max(np.abs(ft_angle))
             plt.plot(freq, ft_angle, label="smooth")
-            plt.plot(get_frequencies(self.angles), fourier_transform(self.angles))
             plt.xlabel("$f\ (in\ s^{-1})$")
-            # plt.savefig(f"{self.folder}/fourier.png")
-            # plt.close()
+            plt.legend()
+            plt.savefig(f"{constants.FOLDER_UP}/Wobbling/fourier_{Analysis.count_data}.png")
+            plt.close()
             # plt.show(block=True)
         return data
 
@@ -211,8 +227,19 @@ if __name__ == "__main__":
     plt.plot(x, x, "k--")
     plt.xlabel("Fourier frequency (Hz)")
     plt.ylabel("Count frequency (Hz)")
+    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/freq_freq.png")
+
+    data.plot("Amplitude", "Mean_angle", "scatter")
+    x = np.linspace(min(data["Amplitude"]), max(data["Amplitude"]))
+    plt.plot(x, x, "k--")
+    plt.plot(x, -x, "k--")
+    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/mean_amplitude.png")
+
 
     data.plot("Mean_vel", "Period", "scatter")
+    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/period_vel.png")
     data.plot("Mean_vel", "Amplitude", "scatter")
+    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/amplitude_vel.png")
     data.plot("Period", "Amplitude", "scatter")
+    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/amplitude_period.png")
     plt.show(block=True)
