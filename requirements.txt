@@ -3,4 +3,5 @@ numpy
 scikit-image
 scipy
 pandas
+Pillow
 pytest

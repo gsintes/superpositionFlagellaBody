@@ -11,8 +11,8 @@ FOLDER = os.path.join(FOLDER_UP, FOLDER_NUM)
 IM_SIZE = (1024, 1024)
 FPS = 80
 
-MIRE_INFO_PATH = "/Users/sintes/Desktop/Martyna/PhD/Ficoll/2020-11-05_13h43m12s_mire/mire_info.json"
-MIRE_PATH = "/Users/sintes/Desktop/Martyna/PhD/Ficoll/2020-11-05_13h43m12s_mire/Image0574023.tif"
+MIRE_INFO_PATH = "/Volumes/GuillaumeHD/SwimmingPVP_23_07_25/2023-07-25_18h06m22s-calib/mire_info.json"
+MIRE_PATH = "/Volumes/GuillaumeHD/SwimmingPVP_23_07_25/2023-07-25_18h06m22s-calib/Image0011742.tif"
 
 
 ANGLE_DATA_FILE = "angle_body_flagella.csv"

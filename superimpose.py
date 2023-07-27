@@ -106,7 +106,7 @@ def split_image(
     red_im = image[:separation, :]
     green_im = image[separation:, :]
     diff_sep = 2 * (separation - image.shape[0] // 2)
-    to_add = np.zeros((diff_sep, image.shape[1]))
+    to_add = np.zeros((np.abs(diff_sep), image.shape[1]))
 
     if diff_sep > 0:
         green_im = np.concatenate((green_im, to_add))
@@ -242,7 +242,7 @@ def folder_superposition(
         shutil.rmtree(save_dir)
         os.makedirs(save_dir)
     image_list = [os.path.join(folder_im, f) for f in os.listdir(folder_im) if (f.endswith(".tif") and not f.startswith("."))]
-    for i, im_path in enumerate(image_list[0: 2]):
+    for i, im_path in enumerate(image_list):
         im_test = mpim.imread(im_path) 
         im_test = im_test / 2 ** 16
         super_imposed = superposition(im_test, mire_info)
@@ -250,16 +250,18 @@ def folder_superposition(
         super_imposed = contrast_enhancement(super_imposed)
         plt.figure()
         plt.imshow(super_imposed, cmap="gray")
-        plt.show(block=True)
+        # plt.show(block=True)
         mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
+        plt.close()
 
 
 if __name__ == "__main__":
-    mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
-    mire_info.save(constants.MIRE_INFO_PATH)
+    # mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
+    # mire_info.save(constants.MIRE_INFO_PATH)
 
-    # mire_info = MireInfo(constants.MIRE_INFO_PATH)
+    mire_info = MireInfo(constants.MIRE_INFO_PATH)
     # parent_folder = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING"
     # list_dir = [f for f in os.listdir(parent_folder) if not f.startswith(".")]
     # for folder in list_dir[0: 1]:
-    #     folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)
+        # folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)
+    folder_superposition("/Volumes/GuillaumeHD/SwimmingPVP_23_07_25/2023-07-25_18h12m38s", "/Users/sintes/Desktop", mire_info)
