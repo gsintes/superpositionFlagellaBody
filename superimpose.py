@@ -264,4 +264,4 @@ if __name__ == "__main__":
     # list_dir = [f for f in os.listdir(parent_folder) if not f.startswith(".")]
     # for folder in list_dir[0: 1]:
         # folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)
-    folder_superposition("/Volumes/GuillaumeHD/SwimmingPVP_23_07_25/2023-07-25_18h12m38s", "/Users/sintes/Desktop", mire_info)
+    folder_superposition("/Volumes/GuillaumeHD/SwimmingPVP_23_07_25/2023-07-25_18h35m40s", "/Users/sintes/Desktop", mire_info)
