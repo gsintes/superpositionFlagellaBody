@@ -6,7 +6,7 @@ from PIL import Image
 
 def parse_arguments()-> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parse_arguments("-r", "--recursive", help="""The folder is a folder of folder""", action="store_true")
+    parser.add_argument("-r", "--recursive", help="""The folder is a folder of folder""", action="store_true")
     parser.add_argument("-f", "--folder", help="""Folder where to revert images?""")
     parser.add_argument("-v", "--verbose", help="Print the progression", action="store_true")
     return parser.parse_args()
@@ -16,7 +16,7 @@ def revert_folder(folder: str, verbose: float) -> None:
     list_im = [os.path.join(folder, f) for f in os.listdir(folder) if (f.endswith(".tif") and not f.startswith("."))]
 
     for k, im_name in enumerate(list_im):
-        if args.verbose and k % 10 == 0: 
+        if verbose and k % 10 == 0: 
             print(f"{100 * k/len(list_im):.2f}%")
         im = Image.open(im_name)
         out = im.rotate(-90, expand=True)
@@ -25,9 +25,12 @@ def revert_folder(folder: str, verbose: float) -> None:
 def main(args: argparse.ArgumentParser)-> None:
     folder: str = args.folder
     verbose: bool = args.verbose
-    
+
     if args.recursive:
-        for sub_folder in [os.path.join(folder, sf) for sf in os.listdir(folder) if os.path.isdir(os.path.join(folder, sf))]:
+        subfolders = [os.path.join(folder, sf) for sf in os.listdir(folder) if os.path.isdir(os.path.join(folder, sf))]
+        for k, sub_folder in enumerate(subfolders):
+            if verbose:
+                print(f"Reverting folder : {k}/{len(subfolders)}")
             revert_folder(sub_folder, verbose)
     else:
         revert_folder(folder, verbose)
@@ -35,4 +38,4 @@ def main(args: argparse.ArgumentParser)-> None:
 
 if __name__=="__main__":
     args = parse_arguments()
-    main()
+    main(args)
