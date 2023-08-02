@@ -2,7 +2,6 @@
 
 import multiprocessing as mp
 import os
-from tkinter.messagebox import NO
 from typing import Tuple, List
 
 import matplotlib.image as mpim

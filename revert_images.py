@@ -1,4 +1,6 @@
 """Revert by  90deg right rotation all the images."""
+
+import multiprocessing as mp
 import argparse
 import os
 
@@ -11,10 +13,9 @@ def parse_arguments()-> argparse.ArgumentParser:
     parser.add_argument("-v", "--verbose", help="Print the progression", action="store_true")
     return parser.parse_args()
 
-def revert_folder(folder: str, verbose: float) -> None:
+def revert_folder(folder: str, verbose: float=False) -> None:
     """Revert the images in the folder."""
     list_im = [os.path.join(folder, f) for f in os.listdir(folder) if (f.endswith(".tif") and not f.startswith("."))]
-
     for k, im_name in enumerate(list_im):
         if verbose and k % 10 == 0: 
             print(f"{100 * k/len(list_im):.2f}%")
@@ -27,11 +28,11 @@ def main(args: argparse.ArgumentParser)-> None:
     verbose: bool = args.verbose
 
     if args.recursive:
-        subfolders = [os.path.join(folder, sf) for sf in os.listdir(folder) if os.path.isdir(os.path.join(folder, sf))]
-        for k, sub_folder in enumerate(subfolders):
-            if verbose:
-                print(f"Reverting folder : {k}/{len(subfolders)}")
-            revert_folder(sub_folder, verbose)
+        pool = mp.Pool(mp.cpu_count() - 1)
+        subfolders = [(os.path.join(folder, sf), False) for sf in os.listdir(folder) if os.path.isdir(os.path.join(folder, sf))]
+        print(subfolders)
+        _ = pool.starmap_async(revert_folder, subfolders).get()
+        pool.close()
     else:
         revert_folder(folder, verbose)
     
