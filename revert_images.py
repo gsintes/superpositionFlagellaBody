@@ -22,7 +22,7 @@ def revert_folder(folder: str, verbose: float=False) -> None:
         im = Image.open(im_name)
         out = im.rotate(-90, expand=True)
         out.save(im_name)
-    print("f{folder} done.")
+    print(f"{folder} done.")
 
 def main(args: argparse.ArgumentParser)-> None:
     folder: str = args.folder
