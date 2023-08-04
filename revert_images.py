@@ -22,6 +22,7 @@ def revert_folder(folder: str, verbose: float=False) -> None:
         im = Image.open(im_name)
         out = im.rotate(-90, expand=True)
         out.save(im_name)
+    print("f{folder} done.")
 
 def main(args: argparse.ArgumentParser)-> None:
     folder: str = args.folder
@@ -30,7 +31,6 @@ def main(args: argparse.ArgumentParser)-> None:
     if args.recursive:
         pool = mp.Pool(mp.cpu_count() - 1)
         subfolders = [(os.path.join(folder, sf), False) for sf in os.listdir(folder) if os.path.isdir(os.path.join(folder, sf))]
-        print(subfolders)
         _ = pool.starmap_async(revert_folder, subfolders).get()
         pool.close()
     else:
