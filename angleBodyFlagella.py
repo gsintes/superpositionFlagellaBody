@@ -13,6 +13,7 @@ from skimage.filters.thresholding import threshold_li
 from makeTestIm import Rectangle
 
 import superimpose
+import superpositionTools
 import constants
 from trackParsing import load_track_data, load_info_exp
 import body_detection as bd
@@ -167,7 +168,7 @@ class AngleDetector:
         sin_theta = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
 
         if self.visualization:
-            super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
+            super_imposed_en = superpositionTools.contrast_enhancement(self.super_imposed)
             plt.imshow(super_imposed_en)
             plt.plot(a0 * x + b0, x, "-g", linewidth=1)
             plt.plot(a1 * x + b1, x, "-r", linewidth=1)
@@ -203,7 +204,7 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
     delta_x = int(info.track_data["center_x"][i]) + info.shift[0]
     delta_y = int(info.track_data["center_y"][i]) + info.shift[1]
     super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info),(-delta_x, -delta_y))
-    super_imposed = superimpose.select_center_image(super_imposed, 100) 
+    super_imposed = superpositionTools.select_center_image(super_imposed, 100) 
     try:
         detect_angle = AngleDetector(super_imposed, i, visualization)
         return (i / constants.FPS, 180 * detect_angle() / np.pi)
