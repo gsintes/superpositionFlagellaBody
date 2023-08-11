@@ -1,18 +1,14 @@
 """Detect the body using convolution techniques."""
 
-import os
 from typing import Tuple, List
 
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.image as mpim
 
 from utils import timeit
 from makeTestIm import Mask, Rectangle
 
 import angleBodyFlagella as abf
-import constants
-import superimpose
 
 def center_of_mass(image: np.ndarray) -> Tuple[int, int]:
     """Return the center of mass of an image weighted by pixel intensity."""

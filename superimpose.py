@@ -256,12 +256,12 @@ def folder_superposition(
 
 
 if __name__ == "__main__":
-    # mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
-    # mire_info.save(constants.MIRE_INFO_PATH)
+    mire_info = mire_analysis(constants.MIRE_PATH, visualization=True)
+    mire_info.save(constants.MIRE_INFO_PATH)
 
-    mire_info = MireInfo(constants.MIRE_INFO_PATH)
+    # mire_info = MireInfo(constants.MIRE_INFO_PATH)
     # parent_folder = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING"
     # list_dir = [f for f in os.listdir(parent_folder) if not f.startswith(".")]
     # for folder in list_dir[0: 1]:
         # folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)
-    folder_superposition("/Volumes/GuillaumeHD/SwimmingPVP_23_07_25/2023-07-25_18h35m40s", "/Users/sintes/Desktop", mire_info)
+    # folder_superposition("/Volumes/GuillaumeHD/SwimmingPVP_23-07-28/2023-07-28_18h35m45s", "/Users/sintes/Desktop", mire_info)

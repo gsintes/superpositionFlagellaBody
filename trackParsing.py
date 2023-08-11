@@ -85,6 +85,11 @@ def load_track_data(
     data = smooth_trajectory(data, 40)
     return calculate_velocities(data)
 
+def load_info_exp(file:str, exp: str) -> pd.DataFrame:
+    """Load the info on the experiment."""
+    info = pd.read_csv(file)
+    info_exp = info.loc[info["exp"]==exp]
+    return info_exp
 
 if __name__ == "__main__":
     data = load_track_data()

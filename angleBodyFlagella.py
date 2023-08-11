@@ -14,7 +14,7 @@ from makeTestIm import Rectangle
 
 import superimpose
 import constants
-from trackParsing import load_track_data
+from trackParsing import load_track_data, load_info_exp
 import body_detection as bd
 
 
@@ -202,7 +202,7 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
     im_test = im_test / 2 ** 16
     delta_x = int(info.track_data["center_x"][i]) + info.shift[0]
     delta_y = int(info.track_data["center_y"][i]) + info.shift[1]
-    super_imposed = superimpose.shift_image(superimpose.superposition(im_test,info.mire_info),(-delta_x, -delta_y))
+    super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info),(-delta_x, -delta_y))
     super_imposed = superimpose.select_center_image(super_imposed, 100) 
     try:
         detect_angle = AngleDetector(super_imposed, i, visualization)
@@ -222,14 +222,18 @@ def list_angle_detection(
 
 
 if __name__ == "__main__":
-    visualization = False
+    exp_info = load_info_exp(constants.EXP_INFO_FILE, constants.FOLDER_NUM)
+    visualization = True
     if visualization:
         try:
             os.makedirs(constants.FIG_FOLDER)
         except FileExistsError:
             pass
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
-    image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
+
+    end = int(exp_info["final_flagella_frame"].values[0])
+    print(type(end))
+    image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
     angles = list_angle_detection(image_list, visualization=visualization)    
     save_data(angles, constants.FOLDER)
