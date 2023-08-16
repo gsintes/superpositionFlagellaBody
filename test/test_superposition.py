@@ -42,9 +42,9 @@ class TestSuperposition:
 
     def test_select_center(self):
         # red_center = st.select_center_image(self.red_im, center=self.center_red, size=100)
-        green_center = st.select_center_image(self.green_im, center=self.center_green, size=10)
+        green_center = st.select_center_image(self.green_im, center=self.center_green, size=100)
         # assert red_center.shape == (200, 200)
-        assert green_center.shape == (20, 20) 
+        assert green_center.shape == (200, 200) 
 
 
 
