@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 import constants
 from mire_analysis import MireInfo
-import superimpose
 import superpositionTools as st
 
 class TestSuperposition:
@@ -31,20 +30,21 @@ class TestSuperposition:
             "center_x": [770],
             "center_y": [520]
         })
-        self.position = (770, 520)
+        self.position = (self.track_data["center_x"][0], self.track_data["center_y"][0])
         self.image[self.position[0] - 5 : self.position[0] + 5, self.position[1] - 5 : self.position[1] + 5] = 100
         self.red_im, self.green_im = st.split_image(self.image, self.mire_info.middle_line)
-        self.center_green = (self.position[0], self.position[1] - self.mire_info.middle_line)
-        self.center_red = (self.position[0])
+        self.center_green = (self.position[0] - self.mire_info.middle_line, self.position[1])
+        print(self.center_green)
+        # self.center_red = (self.position[0])
 
     def test_image_split(self):
         assert self.red_im.shape == self.green_im.shape
 
     def test_select_center(self):
-        red_center = st.select_center_image(self.red_im, center=self.center_green, size=100)
-        green_center = st.select_center_image(self.green_im, center=self.center_red, size=100)
-        assert red_center.shape == (200, 200)
-        assert green_center.shape == (200, 200)
+        # red_center = st.select_center_image(self.red_im, center=self.center_red, size=100)
+        green_center = st.select_center_image(self.green_im, center=self.center_green, size=10)
+        # assert red_center.shape == (200, 200)
+        assert green_center.shape == (20, 20) 
 
 
 

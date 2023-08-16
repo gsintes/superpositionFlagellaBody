@@ -95,14 +95,15 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
 
 def manual_find_displacement(
     green_mire: np.ndarray,
-    red_mire) -> Tuple[int, int]:
+    red_mire: np.ndarray) -> Tuple[int, int]:
     """Manually find the displacement in the image by clicking on a point."""
     fig = plt.figure()
-    plt.imshow(st.select_center_image(green_mire, 100))
+    center = (red_mire.shape[0] // 2, red_mire.shape[1] // 2)
+    plt.imshow(st.select_center_image(green_mire, center, 100))
     point_one = plt.ginput(1)[0]
     plt.close(fig)
     fig = plt.figure()
-    plt.imshow(st.select_center_image(red_mire, 100))
+    plt.imshow(st.select_center_image(red_mire, center,100))
     point_two = plt.ginput(1)[0]
     plt.close(fig)
 

@@ -37,8 +37,8 @@ def parser_track(
     data["x"] = x
     data["y"] = y
     data["z"] = z
-    data["center_x"] = center_x
-    data["center_y"] = center_y
+    data["center_x"] = center_y
+    data["center_y"] = center_x
     return data
 
 
