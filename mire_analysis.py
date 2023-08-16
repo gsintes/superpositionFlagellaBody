@@ -15,6 +15,7 @@ import superpositionTools as st
 
 
 class MireInfo:
+    #TODO add docstring
     def __init__(self, *args) -> None:
         if len(args) == 2:
             self.middle_line = args[0]

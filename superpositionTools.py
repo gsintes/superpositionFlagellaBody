@@ -33,7 +33,7 @@ def binarize(im: np.ndarray) -> np.ndarray:
     bin_im = (im > threshold) * 1
     return bin_im
 
-def select_center_image(image: np.ndarray, size: int = 100) -> np.ndarray:
+def select_center_image(image: np.ndarray, center: Tuple[int, int], size: int = 100) -> np.ndarray:
     """Return the center part of the image."""
     x_mean = image.shape[0] // 2
     y_mean = image.shape[1] // 2

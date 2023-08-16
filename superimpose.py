@@ -65,6 +65,7 @@ def folder_superposition(
     folder_save: str,
     mire_info: MireInfo):
     """Run the superposition and save all images in a folder."""
+
     date_video = folder_im.split("/")
     date_video = date_video[len(date_video) - 1]
     save_dir = os.path.join(folder_save, "Videos_tracking", date_video)
@@ -82,7 +83,6 @@ def folder_superposition(
         super_imposed = st.contrast_enhancement(super_imposed)
         plt.figure()
         plt.imshow(super_imposed, cmap="gray")
-        # plt.show(block=True)
         mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
         plt.close()
 
