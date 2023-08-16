@@ -15,7 +15,12 @@ import superpositionTools as st
 
 
 class MireInfo:
-    #TODO add docstring
+    """
+    Charectize the separation and displacement between the red and green image in the splitted beam configuration.
+    
+    middle_line (int): x-separation between the two colors.
+    displacement (Tuple[int, int]): The vector of translation between the two shifted images. Green is the reference.
+    """
     def __init__(self, *args) -> None:
         if len(args) == 2:
             self.middle_line = args[0]
