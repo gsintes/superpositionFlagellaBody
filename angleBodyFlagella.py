@@ -200,10 +200,13 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
     """Run the analysis on an image."""
     im_test = mpim.imread(image_path) 
     im_test = im_test / 2 ** 16
-    delta_x = int(info.track_data["center_x"][i]) + info.shift[0]
-    delta_y = int(info.track_data["center_y"][i]) + info.shift[1]
-    super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info),(-delta_x, -delta_y))
-    super_imposed = superimpose.select_center_image(super_imposed, 100) 
+    # delta_x = int(info.track_data["center_x"][i]) + info.shift[0]
+    # delta_y = int(info.track_data["center_y"][i]) + info.shift[1]
+    super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info), info.mire_info.displacement)
+    super_imposed = superimpose.select_center_image(
+            super_imposed,
+            center=(int(info.track_data["center_x"][i]) - mire_info.middle_line, int(info.track_data["center_y"][i])),
+            size=100)
     try:
         detect_angle = AngleDetector(super_imposed, i, visualization)
         return (i / constants.FPS, 180 * detect_angle() / np.pi)
