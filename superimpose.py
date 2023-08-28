@@ -12,6 +12,7 @@ from skimage.filters.thresholding import threshold_otsu
 
 import constants
 from mire_info import MireInfo
+import trackParsing
 
 def contrast_enhancement(image: np.ndarray) -> np.ndarray:
     """Enhance the contrast of the image."""
@@ -114,7 +115,8 @@ def folder_superposition(
     folder_save: str,
     mire_info: MireInfo):
     """Run the superposition and save all images in a folder."""
-
+    
+    track_data = trackParsing.load_track_data()
     date_video = folder_im.split("/")
     date_video = date_video[len(date_video) - 1]
     save_dir = os.path.join(folder_save, "Videos_tracking", date_video)
@@ -124,11 +126,14 @@ def folder_superposition(
         shutil.rmtree(save_dir)
         os.makedirs(save_dir)
     image_list = [os.path.join(folder_im, f) for f in os.listdir(folder_im) if (f.endswith(".tif") and not f.startswith("."))]
-    for i, im_path in enumerate(image_list):
+    for i, im_path in enumerate(image_list[:-1]):
         im_test = mpim.imread(im_path) 
         im_test = im_test / 2 ** 16
         super_imposed = superposition(im_test, mire_info)
-        super_imposed = select_center_image(super_imposed)
+        super_imposed = select_center_image(
+            super_imposed,
+            center=(int(track_data["center_x"][i]) - mire_info.middle_line, int(track_data["center_y"][i])),
+            size=100)
         super_imposed = contrast_enhancement(super_imposed)
         plt.figure()
         plt.imshow(super_imposed, cmap="gray")
