@@ -75,7 +75,7 @@ def manual_find_displacement(
     delta_y = int(point_two[1] - point_one[1])
     return (delta_y, delta_x)
 
-def mire_analysis(mire_path: str) -> MireInfo:
+def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
     """Perform the mire analysis"""
     mire_im = mpim.imread(mire_path) 
     mire_im = mire_im / 2 ** 16
@@ -84,6 +84,12 @@ def mire_analysis(mire_path: str) -> MireInfo:
 
     displacement = manual_find_displacement(green_mire, red_mire)
     res = MireInfo(middle_line, displacement)
+
+    if visualization:
+        check_im = superimpose.superposition(mire_im, res)
+        plt.figure()
+        plt.imshow(check_im)
+        plt.show(block=True)
     return res
 
 if __name__ == "__main__":
