@@ -34,8 +34,7 @@ class TestSuperposition:
         self.image[self.position[0] - 5 : self.position[0] + 5, self.position[1] - 5 : self.position[1] + 5] = 100
         self.red_im, self.green_im = st.split_image(self.image, self.mire_info.middle_line)
         self.center_green = (self.position[0] - self.mire_info.middle_line, self.position[1])
-        print(self.center_green)
-        # self.center_red = (self.position[0])
+        # self.center_red = (self.position[0] + mire_info)
 
     def test_image_split(self):
         assert self.red_im.shape == self.green_im.shape
@@ -45,7 +44,13 @@ class TestSuperposition:
         green_center = st.select_center_image(self.green_im, center=self.center_green, size=100)
         # assert red_center.shape == (200, 200)
         assert green_center.shape == (200, 200) 
+        check_im = 255 * np.ones((200, 200))
+        check_im[95:105, 95:105] = 100
 
+        assert np.array_equal(green_center, check_im)
+
+
+    def test_superimpose(self):
 
 
         plt.figure()

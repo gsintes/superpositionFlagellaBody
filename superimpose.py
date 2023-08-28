@@ -2,7 +2,6 @@
 
 import shutil
 from typing import Tuple
-import json
 import os
 
 import matplotlib.image as mpim
@@ -11,7 +10,7 @@ import numpy as np
 
 import constants
 import superpositionTools as st
-from mire_analysis import MireInfo
+from mire_info import MireInfo
 
 def shift_image(
     image: np.ndarray,
