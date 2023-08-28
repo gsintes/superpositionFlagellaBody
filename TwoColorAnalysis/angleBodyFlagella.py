@@ -22,7 +22,13 @@ class NoCenteredParticle(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
 
-
+class Info:
+    def __init__(self, mire_info: superimpose.MireInfo) -> None:
+        self.track_data = load_track_data()
+        self.mire_info = mire_info
+        self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
+         - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2)
+        
 def li_binarization(image: np.ndarray) -> np.ndarray:
     """Binarize the image using the li algorithm."""
     t = threshold_li(image)
@@ -118,11 +124,12 @@ class DetectionChecker:
 
 class AngleDetector:
     """Does the detection of the angle."""
-    def __init__(self, super_imposed: np.ndarray, i: int, visualization: bool) -> None:
+    def __init__(self, super_imposed: np.ndarray, i: int, info: Info, visualization: bool) -> None:
         self.super_imposed = super_imposed
         self.i = i
         self.visualization = visualization
 
+        self.vel = (info.track_data["vel_x"][i], info.track_data["vel_y"][i])
         self.green_im = self.super_imposed[:, :, 1]
         self.red_im = self.super_imposed[:, :, 0]
 
@@ -155,7 +162,7 @@ class AngleDetector:
         return a, b, vect
 
     def __call__(self) -> float    :
-        """Detect the angle between the body and the flagella."""
+        """Detect the angle between the body and the flagella, and the body and velocity."""
         try:
             a0, b0, vect_body = self.detect_body(visualization=self.visualization)
             a1, b1, vect_flagella = self.detect_flagella(visualization=False)
@@ -163,9 +170,14 @@ class AngleDetector:
             raise
         x = np.linspace(0, self.super_imposed.shape[0])
 
-        ps = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
-        sin_theta = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
+        ps_fb = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
+        sin_theta_fb = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
+        angle_fb = np.sign(sin_theta_fb) * np.arccos(ps_fb)
 
+        vel_norm =  np.sqrt(self.vel[0] ** 2 + self.vel[1] ** 2)
+        ps_vb = (vect_body[0] * self.vel[0] + vect_body[1] * self.vel[1]) / vel_norm
+        sin_theta_vb = (- vect_body[0] * self.vel[1] + vect_body[1] * self.vel[0]) / vel_norm
+        angle_vb = np.sign(sin_theta_vb) * np.arccos(ps_vb)
         if self.visualization:
             super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
             plt.imshow(super_imposed_en)
@@ -178,38 +190,31 @@ class AngleDetector:
             plt.savefig(os.path.join(constants.FIG_FOLDER, f"{self.i}.png"))    
             # plt.clf()
             plt.close("all") 
-        return np.sign(sin_theta) * np.arccos(ps)
+        return angle_fb, angle_vb
 
 
 def save_data(angles: List[Tuple[float, float]], folder=constants.FOLDER) -> None:
     """Save the data to a text file."""
     textfile = open(os.path.join(folder, "angle_body_flagella.csv"), "w")
+    textfile.write("Time, FlagellaBody angle, VelocityBody angle\n")
     for i in range(len(angles)):
-        textfile.write(f"{angles[i][0]}, {angles[i][1]}\n")
+        textfile.write(f"{angles[i][0]}, {angles[i][1]}, {angles[i][2]}\n")
     textfile.close()
-
-class Info:
-    def __init__(self, mire_info: superimpose.MireInfo) -> None:
-        self.track_data = load_track_data()
-        self.mire_info = mire_info
-        self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
-         - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2)
 
 
 def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
     """Run the analysis on an image."""
     im_test = mpim.imread(image_path) 
     im_test = im_test / 2 ** 16
-    # delta_x = int(info.track_data["center_x"][i]) + info.shift[0]
-    # delta_y = int(info.track_data["center_y"][i]) + info.shift[1]
     super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info), info.mire_info.displacement)
     super_imposed = superimpose.select_center_image(
             super_imposed,
             center=(int(info.track_data["center_x"][i]) - info.mire_info.middle_line, int(info.track_data["center_y"][i])),
             size=100)
     try:
-        detect_angle = AngleDetector(super_imposed, i, visualization)
-        return (i / constants.FPS, 180 * detect_angle() / np.pi)
+        detect_angle = AngleDetector(super_imposed, i, info, visualization)
+        angles = detect_angle()
+        return (i / constants.FPS, 180 * angles[0] / np.pi, 180 * angles[1] / np.pi)
     except NoCenteredParticle:
         return (0, 0)
 
@@ -235,7 +240,7 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     end = int(exp_info["final_flagella_frame"].values[0])
-    # end = 2
+    end = 100
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
     angles = list_angle_detection(image_list, visualization=visualization)    
