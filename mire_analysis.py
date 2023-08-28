@@ -10,7 +10,7 @@ import matplotlib.image as mpim
 from scipy.signal import correlate2d
 
 import constants
-import superpositionTools as st
+import superimpose 
 from mire_info import MireInfo
 
 
@@ -20,7 +20,7 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
     separators = []
     for loc_profile in loc_profiles:
         profile = mire_im[:, loc_profile] / max(mire_im[:, loc_profile])
-        smooth_prof = st.moving_average(profile, 20)
+        smooth_prof = superimpose.moving_average(profile, 20)
         diff = smooth_prof[401: 651] - smooth_prof[400 : 650]
         separators.append(405 + list(diff).index(min(diff)))
     separation = median(separators)
@@ -63,11 +63,11 @@ def manual_find_displacement(
     """Manually find the displacement in the image by clicking on a point."""
     fig = plt.figure()
     center = (red_mire.shape[0] // 2, red_mire.shape[1] // 2)
-    plt.imshow(st.select_center_image(green_mire, center, 100))
+    plt.imshow(superimpose.select_center_image(green_mire, center, 100))
     point_one = plt.ginput(1)[0]
     plt.close(fig)
     fig = plt.figure()
-    plt.imshow(st.select_center_image(red_mire, center,100))
+    plt.imshow(superimpose.select_center_image(red_mire, center,100))
     point_two = plt.ginput(1)[0]
     plt.close(fig)
 
@@ -80,7 +80,7 @@ def mire_analysis(mire_path: str) -> MireInfo:
     mire_im = mpim.imread(mire_path) 
     mire_im = mire_im / 2 ** 16
     middle_line = find_separation(mire_im)
-    red_mire, green_mire = st.split_image(mire_im, middle_line)
+    red_mire, green_mire = superimpose.split_image(mire_im, middle_line)
 
     displacement = manual_find_displacement(green_mire, red_mire)
     res = MireInfo(middle_line, displacement)
