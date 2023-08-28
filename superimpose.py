@@ -129,16 +129,19 @@ def folder_superposition(
     for i, im_path in enumerate(image_list[:-1]):
         im_test = mpim.imread(im_path) 
         im_test = im_test / 2 ** 16
+
         super_imposed = superposition(im_test, mire_info)
         super_imposed = select_center_image(
             super_imposed,
             center=(int(track_data["center_x"][i]) - mire_info.middle_line, int(track_data["center_y"][i])),
             size=100)
-        super_imposed = contrast_enhancement(super_imposed)
-        plt.figure()
-        plt.imshow(super_imposed, cmap="gray")
+        super_imposed = contrast_enhancement(super_imposed) 
+        # plt.figure()
+        # plt.imshow(im_test, cmap="gray")
+        # plt.plot(int(track_data["center_y"][i]), int(track_data["center_x"][i]) , ".r")
+        # plt.savefig(os.path.join(save_dir, f"{i}.png"))
+        # plt.close()
         mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
-        plt.close()
 
 
 if __name__ == "__main__":

@@ -205,7 +205,7 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
     super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info), info.mire_info.displacement)
     super_imposed = superimpose.select_center_image(
             super_imposed,
-            center=(int(info.track_data["center_x"][i]) - mire_info.middle_line, int(info.track_data["center_y"][i])),
+            center=(int(info.track_data["center_x"][i]) - info.mire_info.middle_line, int(info.track_data["center_y"][i])),
             size=100)
     try:
         detect_angle = AngleDetector(super_imposed, i, visualization)
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     end = int(exp_info["final_flagella_frame"].values[0])
-    end = 2
+    # end = 2
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
     angles = list_angle_detection(image_list, visualization=visualization)    
