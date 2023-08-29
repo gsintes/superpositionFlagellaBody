@@ -16,7 +16,7 @@ FOLDER = os.path.join(FOLDER_UP, FOLDER_NUM)
 IM_SIZE = (1024, 1024)
 FPS = 80
 
-MIRE_INFO_PATH = f"//Users/sintes/Desktop/Martyna/PhD/Ficoll/2020-11-05_13h43m12s_mire/mire_info.json"
+MIRE_INFO_PATH = f"/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-07-28/2023-07-28_18h15m41s_calib/mire_info.json"
 MIRE_PATH = f"{FOLDER_UP}/2023-07-25_18h06m22s-calib/Image0011742.tif"
 
 

@@ -3,6 +3,7 @@
 import multiprocessing as mp
 import os
 from typing import Tuple, List
+import math
 
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
@@ -128,7 +129,7 @@ class AngleDetector:
         self.super_imposed = super_imposed
         self.i = i
         self.visualization = visualization
-
+        self.center = (info.track_data["center_x"][i], info.track_data["center_y"][i])
         self.vel = (info.track_data["vel_x"][i], info.track_data["vel_y"][i])
         self.green_im = self.super_imposed[:, :, 1]
         self.red_im = self.super_imposed[:, :, 0]
@@ -173,16 +174,26 @@ class AngleDetector:
         ps_fb = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
         sin_theta_fb = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
         angle_fb = np.sign(sin_theta_fb) * np.arccos(ps_fb)
+        if not(math.isnan(self.vel[0]) or math.isnan(self.vel[1])):
+            vel_norm =  np.sqrt(self.vel[0] ** 2 + self.vel[1] ** 2)
+            if vel_norm != 0:
+                print(vel_norm)
+                ps_vb = (vect_body[0] * self.vel[0] + vect_body[1] * self.vel[1]) / vel_norm
+                sin_theta_vb = (- vect_body[0] * self.vel[1] + vect_body[1] * self.vel[0]) / vel_norm
+                angle_vb = np.sign(sin_theta_vb) * np.arccos(ps_vb)
+            else:
+                angle_vb = 0
+        else:
+            angle_vb = 0
 
-        vel_norm =  np.sqrt(self.vel[0] ** 2 + self.vel[1] ** 2)
-        ps_vb = (vect_body[0] * self.vel[0] + vect_body[1] * self.vel[1]) / vel_norm
-        sin_theta_vb = (- vect_body[0] * self.vel[1] + vect_body[1] * self.vel[0]) / vel_norm
-        angle_vb = np.sign(sin_theta_vb) * np.arccos(ps_vb)
         if self.visualization:
             super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
+            if angle_vb != 0:
+                plt.quiver(100, 100, self.vel[0], self.vel[1], scale=20)
             plt.imshow(super_imposed_en)
             plt.plot(a0 * x + b0, x, "-g", linewidth=1)
             plt.plot(a1 * x + b1, x, "-r", linewidth=1)
+            
             plt.ylim([self.super_imposed.shape[0], 0])
             plt.xlim([0, self.super_imposed.shape[1]])
             # plt.draw()
@@ -240,7 +251,7 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     end = int(exp_info["final_flagella_frame"].values[0])
-    end = 100
+    # end = 50
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
     angles = list_angle_detection(image_list, visualization=visualization)    
