@@ -95,8 +95,6 @@ class BodyDetection:
             plt.figure()
             plt.imshow(self.image.transpose(), cmap="gray")
             plt.plot(X, Y, ".r", markersize=2)
-            # plt.savefig(f"/Users/sintes/Desktop/Test/detection_check.png")
-            # plt.close()
             plt.show(block=True)
 
         return Rectangle(self.a, self.b, self.center, np.pi * self.best_angle / 180)

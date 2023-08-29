@@ -9,6 +9,8 @@ import matplotlib.image as mpim
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage import measure
+from skimage import exposure
+
 from skimage.filters import gaussian
 from skimage.filters.thresholding import threshold_li
 from makeTestIm import Rectangle
@@ -17,6 +19,7 @@ import superimpose
 import constants
 from trackParsing import load_track_data, load_info_exp
 import body_detection as bd
+from mire_info import MireInfo
 
 
 class NoCenteredParticle(Exception):
@@ -24,7 +27,7 @@ class NoCenteredParticle(Exception):
         super().__init__(*args)
 
 class Info:
-    def __init__(self, mire_info: superimpose.MireInfo) -> None:
+    def __init__(self, mire_info: MireInfo) -> None:
         self.track_data = load_track_data()
         self.mire_info = mire_info
         self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
@@ -136,8 +139,9 @@ class AngleDetector:
 
     def detect_flagella(self, visualization: bool = False) -> Tuple[float, float, Tuple[float, float]]: 
         """Detect the flagella in the red image."""
-        blur = gaussian(self.red_im, 2)
-        bin_red = li_binarization(blur)
+        p2, p98 = np.percentile(self.red_im, (2, 98))
+        stretched = exposure.rescale_intensity(self.red_im, in_range=(p2, p98))
+        bin_red = li_binarization(stretched)
         x, y, _ = keep_bigger_particle(bin_red, center=False)
         bin_red = make_bin_im(x, y, bin_red.shape)
 
@@ -177,7 +181,6 @@ class AngleDetector:
         if not(math.isnan(self.vel[0]) or math.isnan(self.vel[1])):
             vel_norm =  np.sqrt(self.vel[0] ** 2 + self.vel[1] ** 2)
             if vel_norm != 0:
-                print(vel_norm)
                 ps_vb = (vect_body[0] * self.vel[0] + vect_body[1] * self.vel[1]) / vel_norm
                 sin_theta_vb = (- vect_body[0] * self.vel[1] + vect_body[1] * self.vel[0]) / vel_norm
                 angle_vb = np.sign(sin_theta_vb) * np.arccos(ps_vb)
@@ -189,7 +192,7 @@ class AngleDetector:
         if self.visualization:
             super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
             if angle_vb != 0:
-                plt.quiver(100, 100, self.vel[0], self.vel[1], scale=20)
+                plt.quiver(100, 100, self.vel[0], self.vel[1], scale=10)
             plt.imshow(super_imposed_en)
             plt.plot(a0 * x + b0, x, "-g", linewidth=1)
             plt.plot(a1 * x + b1, x, "-r", linewidth=1)
@@ -212,15 +215,29 @@ def save_data(angles: List[Tuple[float, float]], folder=constants.FOLDER) -> Non
         textfile.write(f"{angles[i][0]}, {angles[i][1]}, {angles[i][2]}\n")
     textfile.close()
 
+def get_center_body(super_imposed: np.ndarray):
+    """Get the center of the body."""
+    green_im = super_imposed[:, :, 1]
+    center_im = (green_im.shape[0] // 2, green_im.shape[1] // 2)
+    green_im = superimpose.select_center_image(green_im, center_im, size=100)
+    bin_im = li_binarization(green_im)
+    _, _, centroid = keep_bigger_particle(bin_im, center=False)
+    # plt.figure()
+    # plt.imshow(green_im)
+    # plt.plot(centroid[1], centroid[0], "*r")
+    # plt.show(block=True)
+    centroid = (center_im[0] + int(centroid[0]) - 100, center_im[1] + int(centroid[1]) - 100)
+    return centroid
 
 def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
     """Run the analysis on an image."""
     im_test = mpim.imread(image_path) 
     im_test = im_test / 2 ** 16
     super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info), info.mire_info.displacement)
+    center = get_center_body(super_imposed)
     super_imposed = superimpose.select_center_image(
             super_imposed,
-            center=(int(info.track_data["center_x"][i]) - info.mire_info.middle_line, int(info.track_data["center_y"][i])),
+            center=center,
             size=100)
     try:
         detect_angle = AngleDetector(super_imposed, i, info, visualization)
@@ -251,7 +268,7 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     end = int(exp_info["final_flagella_frame"].values[0])
-    # end = 50
+    # end = 100
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
     angles = list_angle_detection(image_list, visualization=visualization)    
