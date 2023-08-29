@@ -141,13 +141,14 @@ class AngleDetector:
         """Detect the flagella in the red image."""
         p2, p98 = np.percentile(self.red_im, (2, 98))
         stretched = exposure.rescale_intensity(self.red_im, in_range=(p2, p98))
-        bin_red = li_binarization(stretched)
+        blur = gaussian(stretched)
+        bin_red = li_binarization(blur)
         x, y, _ = keep_bigger_particle(bin_red, center=False)
         bin_red = make_bin_im(x, y, bin_red.shape)
 
         a, b, vect = find_main_axis(x, y)
         if visualization:
-            checker = DetectionChecker(self.green_im, bin_red, a, b) 
+            checker = DetectionChecker(self.red_im, bin_red, a, b) 
             checker()
         return a, b, vect
 
@@ -169,8 +170,8 @@ class AngleDetector:
     def __call__(self) -> float    :
         """Detect the angle between the body and the flagella, and the body and velocity."""
         try:
-            a0, b0, vect_body = self.detect_body(visualization=self.visualization)
-            a1, b1, vect_flagella = self.detect_flagella(visualization=False)
+            a0, b0, vect_body = self.detect_body(visualization=False)
+            a1, b1, vect_flagella = self.detect_flagella(visualization=True)
         except NoCenteredParticle:
             raise
         x = np.linspace(0, self.super_imposed.shape[0])
