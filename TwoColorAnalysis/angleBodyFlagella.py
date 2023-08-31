@@ -231,14 +231,19 @@ def save_data(angles: List[Tuple[float, float]], folder=constants.FOLDER) -> Non
         textfile.write(f"{angles[i][0]}, {angles[i][1]}, {angles[i][2]}\n")
     textfile.close()
 
-def get_center_body(super_imposed: np.ndarray):
+def get_center_body(super_imposed: np.ndarray, center_track: Tuple[int, int]):
     """Get the center of the body."""
     green_im = super_imposed[:, :, 1]
-    center_im = (green_im.shape[0] // 2, green_im.shape[1] // 2)
-    green_im = superimpose.select_center_image(green_im, center_im, size=100)
-    bin_im = li_binarization(green_im)
+    # center_im = (green_im.shape[0] // 2, green_im.shape[1] // 2)
+    green_im_centered = superimpose.select_center_image(green_im, center_track, size=100)
+    bin_im = li_binarization(green_im_centered)
     _, _, centroid = keep_bigger_particle(bin_im, center=False)
-    centroid = (center_im[0] + int(centroid[0]) - 100, center_im[1] + int(centroid[1]) - 100)
+    centroid = (center_track[0] + int(centroid[0]) - 100, center_track[1] + int(centroid[1]) - 100)
+    # plt.figure()
+    # plt.imshow(green_im, cmap="gray")
+    # plt.plot(center_track[1], center_track[0], "or")
+    # plt.plot(centroid[1], centroid[0], "*g")
+    # plt.show(block=True)
     return centroid
 
 def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
@@ -246,7 +251,8 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
     im_test = mpim.imread(image_path) 
     im_test = im_test / 2 ** 16
     super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info), info.mire_info.displacement)
-    center = get_center_body(super_imposed)
+    center_track = (int(info.track_data["center_x"][i]) - info.mire_info.middle_line, int(info.track_data["center_y"][i]))
+    center = get_center_body(super_imposed, center_track)
     super_imposed = superimpose.select_center_image(
             super_imposed,
             center=center,
@@ -280,7 +286,7 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     end = int(exp_info["final_flagella_frame"].values[0])
-    # end = 100
+    # end = 10
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
     angles = list_angle_detection(image_list, visualization=visualization)    
