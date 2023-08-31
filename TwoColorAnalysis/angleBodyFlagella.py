@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage import measure
 from skimage import exposure
+from scipy.ndimage import median_filter
 
 from skimage.filters import gaussian
 from skimage.filters.thresholding import threshold_li
@@ -141,11 +142,25 @@ class AngleDetector:
         """Detect the flagella in the red image."""
         p2, p98 = np.percentile(self.red_im, (2, 98))
         stretched = exposure.rescale_intensity(self.red_im, in_range=(p2, p98))
-        blur = gaussian(stretched)
+        filtered = median_filter(stretched, size=10)
+        blur = gaussian(filtered)
+        
         bin_red = li_binarization(blur)
         x, y, _ = keep_bigger_particle(bin_red, center=False)
         bin_red = make_bin_im(x, y, bin_red.shape)
 
+        # _, axis = plt.subplots(5)
+        # axis[0].imshow(self.red_im)
+        # axis[0].set_title("Original")
+        # axis[1].imshow(stretched)
+        # axis[1].set_title("Stretched")
+        # axis[2].imshow(filtered)
+        # axis[2].set_title("Filtered")
+        # axis[4].imshow(bin_red)
+        # axis[4].set_title("Bin")
+        # axis[3].imshow(blur)
+        # axis[3].set_title("Blurred")
+        # plt.show(block=True)
         a, b, vect = find_main_axis(x, y)
         if visualization:
             checker = DetectionChecker(self.red_im, bin_red, a, b) 
@@ -223,10 +238,6 @@ def get_center_body(super_imposed: np.ndarray):
     green_im = superimpose.select_center_image(green_im, center_im, size=100)
     bin_im = li_binarization(green_im)
     _, _, centroid = keep_bigger_particle(bin_im, center=False)
-    # plt.figure()
-    # plt.imshow(green_im)
-    # plt.plot(centroid[1], centroid[0], "*r")
-    # plt.show(block=True)
     centroid = (center_im[0] + int(centroid[0]) - 100, center_im[1] + int(centroid[1]) - 100)
     return centroid
 
