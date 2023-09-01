@@ -8,8 +8,7 @@ import math
 import matplotlib.image as mpim
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage import measure
-from skimage import exposure
+from skimage import measure, exposure, morphology
 from scipy.ndimage import median_filter
 
 from skimage.filters import gaussian
@@ -142,10 +141,11 @@ class AngleDetector:
         """Detect the flagella in the red image."""
         p2, p98 = np.percentile(self.red_im, (2, 98))
         stretched = exposure.rescale_intensity(self.red_im, in_range=(p2, p98))
-        filtered = median_filter(stretched, size=10)
-        blur = gaussian(filtered)
+        filtered = median_filter(stretched, size=15)
+        blur = gaussian(filtered, 2)
         
         bin_red = li_binarization(blur)
+        eroded = morphology.binary_closing(bin_red)
         x, y, _ = keep_bigger_particle(bin_red, center=False)
         bin_red = make_bin_im(x, y, bin_red.shape)
 
