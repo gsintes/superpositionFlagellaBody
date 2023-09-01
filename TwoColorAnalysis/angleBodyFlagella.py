@@ -145,7 +145,7 @@ class AngleDetector:
         blur = gaussian(filtered, 2)
         
         bin_red = li_binarization(blur)
-        eroded = morphology.binary_closing(bin_red)
+        bin_red = morphology.binary_closing(bin_red, footprint=np.ones((9, 9)))
         x, y, _ = keep_bigger_particle(bin_red, center=False)
         bin_red = make_bin_im(x, y, bin_red.shape)
 
