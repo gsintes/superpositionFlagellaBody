@@ -17,7 +17,6 @@ FIG_FOLDER = os.path.join(FOLDER_UP, "Wobbling", FOLDER_NUM)
 FOLDER = os.path.join(FOLDER_UP, FOLDER_NUM)
 
 IM_SIZE = (1024, 1024)
-FPS = 80
 
 MIRE_INFO_PATH = os.path.join(FOLDER_UP, "2023-07-25_18h06m22s_calib/mire_info.json")
 MIRE_PATH = f"{FOLDER_UP}/2023-07-25_18h06m22s-calib/Image0003873.tif"
