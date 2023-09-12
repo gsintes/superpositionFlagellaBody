@@ -54,7 +54,7 @@ class Analysis:
         self.limits = limits
         lim_track0 = int(round(min(time) * self.fps)) + limits[0]
         lim_track1 = int(round(min(time) * self.fps)) + limits[1]
-        self.track_data: pd.DataFrame = load_track_data(folder)[lim_track0: lim_track1]
+        self.track_data: pd.DataFrame = load_track_data(folder=folder, fps=self.fps)[lim_track0: lim_track1]
         
         self.window_size = 0.25
         self.times = time
