@@ -62,11 +62,11 @@ def smooth_derivative(vector: Iterable, step_size: float) -> Iterable:
     return np.array(derivative)
 
 
-def calculate_velocities(data: pd.DataFrame) -> pd.DataFrame:
+def calculate_velocities(data: pd.DataFrame, fps: int) -> pd.DataFrame:
     """Calculate the velocities and add them to a new dataframe."""
-    data["vel_x"] = smooth_derivative(data["smooth_x"], 1 / constants.FPS)
-    data["vel_y"] = smooth_derivative(data["smooth_y"], 1 / constants.FPS)
-    data["vel_z"] = smooth_derivative(data["smooth_z"], 1 / constants.FPS)
+    data["vel_x"] = smooth_derivative(data["smooth_x"], 1 / fps)
+    data["vel_y"] = smooth_derivative(data["smooth_y"], 1 / fps)
+    data["vel_z"] = smooth_derivative(data["smooth_z"], 1 / fps)
 
     data["vel"] = np.sqrt(data["vel_x"] ** 2 + data["vel_y"] ** 2 + data["vel_z"] ** 2)
     data["slope"] = - data["vel_x"] / data["vel_y"]
@@ -85,7 +85,7 @@ def load_track_data(
     """Load, parse and calculate velocities from track data."""
     data = parser_track(folder, file, fps)
     data = smooth_trajectory(data, 40)
-    return calculate_velocities(data)
+    return calculate_velocities(data, fps)
 
 def load_info_exp(file:str, exp: str) -> pd.DataFrame:
     """Load the info on the experiment."""
