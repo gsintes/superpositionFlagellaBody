@@ -25,7 +25,7 @@ def fourier_transform(signal: List[float]) -> List[float]:
         ft_signal = list(ft_signal / max(ft_signal))
         return ft_signal
 
-def get_frequencies(signal: List[int], frame_rate: int = constants.FPS ) -> List[float]:
+def get_frequencies(signal: List[int], frame_rate: int ) -> List[float]:
     """Give the frequency list associated with the Fourier transform"""
     freq = np.fft.rfftfreq(len(signal), d=1 / frame_rate)
     return freq
@@ -34,26 +34,27 @@ class Analysis:
     count_data = 0
     def __init__(self,
         limits: Tuple[int, int],
+        fps: int,
         folder: str = "",
         data_file: str = constants.ANGLE_DATA_FILE,
         angles: List[float]=[],
         times: List[float]=[]
         ) -> None:
         """Load the angle data."""
-
+        self.fps = fps
         Analysis.count_data += 1
         self.folder = folder
         if folder != "":
-            data = np.genfromtxt(os.path.join(folder, data_file), delimiter=",")
-            time = data[:, 0]
-            angle = data[:, 1] 
+            data = pd.read_csv(os.path.join(folder, data_file), delimiter=",")
+            time = data["Time"]
+            angle = data[" FlagellaBody angle"]
         else:
             time = times
             angle = angles
         self.limits = limits
-        lim_track0 = int(round(min(time) * constants.FPS)) + limits[0]
-        lim_track1 = int(round(min(time) * constants.FPS)) + limits[1]
-        self.track_data: pd.DataFrame = load_track_data()[lim_track0: lim_track1]
+        lim_track0 = int(round(min(time) * self.fps)) + limits[0]
+        lim_track1 = int(round(min(time) * self.fps)) + limits[1]
+        self.track_data: pd.DataFrame = load_track_data(folder)[lim_track0: lim_track1]
         
         self.window_size = 0.25
         self.times = time
@@ -90,16 +91,20 @@ class Analysis:
     def _linear_interpolation(self) -> None:
         """Make a linear interpolation for the missing data."""
         angle_inter = list(self.cleaned_angles.copy())
-        times_inter = [k / constants.FPS for k in range(int(min(self.times) * constants.FPS), int(max(self.times) * constants.FPS) + 1)]
+        print(self.fps)
+        times_inter = [k / self.fps for k in range(int(min(self.times) * 80), int(max(self.times) * 80) + 1)]
+        print(times_inter, self.times)
+        print(min(self.times), max(self.times))
         diff_times = self.times[1: ] - self.times[:len(self.times) -1]
         for i, diff in enumerate(diff_times):
-            if diff > 1.5 / constants.FPS:
-                nb_missing = int(round(diff * constants.FPS)) - 1
+            if diff > 1.5 / self.fps:
+                nb_missing = int(round(diff * self.fps)) - 1
                 slope = (np.mean(self.cleaned_angles[i + 1: i + 10]) - np.mean(self.cleaned_angles[i - 10: i])) / diff
                 for k in range(1, nb_missing + 1):
-                    ang = self.cleaned_angles[i] + k * slope / constants.FPS
+                    ang = self.cleaned_angles[i] + k * slope / self.fps
                     angle_inter.insert(i + k, ang)
         self.cleaned_times = times_inter.copy()
+        print(len(self.cleaned_times))
         self.cleaned_angles = angle_inter
 
     def _clean_data(self) -> None:
@@ -117,10 +122,14 @@ class Analysis:
         """Detect the extrema of the angles."""
         angles = np.array(self.cleaned_angles)
         differences = angles[1: ] - angles[:- 1]
+        print(len(self.cleaned_angles), len(self.cleaned_times))
         extrema = []
-        for i, diff in enumerate(differences[: - 1]):
+        for i, diff in enumerate(differences[: -1]):
             if diff * differences[i + 1] < 0:
-                extrema.append((self.cleaned_times[i + 1], angles[i + 1]))
+                try:
+                    extrema.append((self.cleaned_times[i + 1], angles[i + 1]))
+                except IndexError:
+                    pass
         extrema_a = np.array(extrema)
             
 
@@ -152,7 +161,7 @@ class Analysis:
         """Run the analysis on the section of the data."""
         self._clean_data()
         self._detect_extrema()
-        freq = get_frequencies(self.cleaned_angles)
+        freq = get_frequencies(self.cleaned_angles, self.fps)
         ft_angle = fourier_transform(self.cleaned_angles)
 
         self._get_amplitude()
@@ -188,7 +197,7 @@ class Analysis:
             plt.figure()
             ft_angle = fourier_transform(self.angles)
             spectrum = np.abs(ft_angle) / max(np.abs(ft_angle))
-            plt.plot(get_frequencies(self.angles), spectrum, label="Raw")
+            plt.plot(get_frequencies(self.angles, self.fps), spectrum, label="Raw")
             ft_angle = fourier_transform(self.cleaned_angles)
             spectrum = np.abs(ft_angle) / max(np.abs(ft_angle))
             plt.plot(freq, ft_angle, label="smooth")
@@ -202,19 +211,31 @@ class Analysis:
 
 def get_limits(lim_lit: str) -> Tuple[int, int]:
     """Tranfroms the string of limits into a tuple of ints."""
-    exp = re.search(r"^\((\d*),\ (\d*)", lim_lit)
+    exp = re.search(r"^(\d*)-(\d*)", lim_lit)
     lim0 = int(exp.group(1))
     lim1 = int(exp.group(2))
     return (min(lim0, lim1), max(lim0, lim1))
 
 
 if __name__ == "__main__":
-    analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "exp-info.csv"))
 
     data_list: List[pd.Series] = []
     for _, info in analysis_data.iterrows():
-        analysis = Analysis(limits=get_limits(info["Limits"]), folder=info["Folder"])
-        data_list.append(analysis(visualization=True))
+        limits = info["limits"]
+        print(limits)
+        if info["final_flagella_frame"] != 0 and type(limits) == str:
+            
+            limit_list = info["limits"].split("/")
+            folder = info["exp"]
+            fps = info["fps"]
+            if len(folder.split("/")) == 1:
+                folder = os.path.join(constants.FOLDER_UP, folder)
+            for lim in limit_list:
+                if lim != "":
+                    
+                    analysis = Analysis(limits=get_limits(lim), folder=folder, fps=fps)
+                    data_list.append(analysis(visualization=True))
 
     data = pd.DataFrame()
     data = pd.DataFrame(data_list)

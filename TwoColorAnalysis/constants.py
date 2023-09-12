@@ -2,11 +2,8 @@
 
 import os
 
-# FOLDER_UP = "/Users/sintes/Desktop/Martyna/PhD/Ficoll/Ficoll17%_20-11-05_1uLbactos_TRACKING" 
-# FOLDER_NUM = "2020-11-05_13h24m47s"
-
-FOLDER_UP = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-07-25/"
-FOLDER_NUM = "2023-07-25_18h46m28s"
+FOLDER_UP = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-08-01/"
+FOLDER_NUM = "2023-09-01_17h59m58s"
 
 # FOLDER_UP = "/Users/sintes/Desktop/Test"
 # FOLDER_NUM = "2023-07-25_18h14m59s"
@@ -19,8 +16,8 @@ FOLDER = os.path.join(FOLDER_UP, FOLDER_NUM)
 IM_SIZE = (1024, 1024)
 FPS = 80
 
-MIRE_INFO_PATH = os.path.join(FOLDER_UP, "2023-07-25_18h06m22s-calib/mire_info.json")
-MIRE_PATH = f"{FOLDER_UP}/2023-07-25_18h06m22s-calib/Image0003873.tif"
+MIRE_INFO_PATH = os.path.join(FOLDER_UP, "2023-08-01_17h23m47s_calib/mire_info.json")
+MIRE_PATH = f"{FOLDER_UP}/2023-09-01_17h21m57s_calib/Image0011396.tif"
 
 
 ANGLE_DATA_FILE = "angle_body_flagella.csv"
