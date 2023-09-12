@@ -28,7 +28,7 @@ class NoCenteredParticle(Exception):
 
 class Info:
     def __init__(self, fps: int, mire_info: MireInfo) -> None:
-        self.track_data = load_track_data()
+        self.track_data = load_track_data(fps=fps)
         self.mire_info = mire_info
         self.fps = fps
         self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
@@ -266,6 +266,7 @@ def list_angle_detection(
 
 if __name__ == "__main__":
     exp_info = load_info_exp(constants.EXP_INFO_FILE, constants.FOLDER_NUM)
+    fps = int(exp_info["fps"].values[0])
     visualization = True
     if visualization:
         try:
@@ -279,5 +280,5 @@ if __name__ == "__main__":
     # end = 10
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
-    angles = list_angle_detection(image_list, fps= int(exp_info["fps"].values[0]),visualization=visualization)    
+    angles = list_angle_detection(image_list, fps=fps,visualization=visualization)    
     save_data(angles, constants.FOLDER)

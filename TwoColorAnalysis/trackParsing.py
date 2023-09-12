@@ -14,7 +14,8 @@ from superimpose import MireInfo
 
 def parser_track(
     folder: str = constants.FOLDER,
-    file: str = constants.TRACK_FILE) -> pd.DataFrame:
+    file: str = constants.TRACK_FILE,
+    fps: int = 80) -> pd.DataFrame:
     """Parse the data from the track file"""
     exp = r"^\s*\d+\s+(-*\d+.\d+)\s+(-*\d+.\d+)\s+(-*\d+.\d+)\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+(\d+.\d+)\s+(\d+.\d+)"
     x = []
@@ -31,7 +32,7 @@ def parser_track(
             z.append(float(expression.group(3)))
             center_x.append(float(expression.group(4)))
             center_y.append(float(expression.group(5)))
-            time.append(i / constants.FPS) 
+            time.append(i / fps) 
     data = pd.DataFrame()
     data["time"] = time
     data["x"] = x
