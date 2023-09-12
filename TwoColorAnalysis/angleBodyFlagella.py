@@ -27,9 +27,10 @@ class NoCenteredParticle(Exception):
         super().__init__(*args)
 
 class Info:
-    def __init__(self, mire_info: MireInfo) -> None:
+    def __init__(self, fps: int, mire_info: MireInfo) -> None:
         self.track_data = load_track_data()
         self.mire_info = mire_info
+        self.fps = fps
         self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
          - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2)
         
@@ -149,18 +150,6 @@ class AngleDetector:
         x, y, _ = keep_bigger_particle(bin_red, center=False)
         bin_red = make_bin_im(x, y, bin_red.shape)
 
-        # _, axis = plt.subplots(5)
-        # axis[0].imshow(self.red_im)
-        # axis[0].set_title("Original")
-        # axis[1].imshow(stretched)
-        # axis[1].set_title("Stretched")
-        # axis[2].imshow(filtered)
-        # axis[2].set_title("Filtered")
-        # axis[4].imshow(bin_red)
-        # axis[4].set_title("Bin")
-        # axis[3].imshow(blur)
-        # axis[3].set_title("Blurred")
-        # plt.show(block=True)
         a, b, vect = find_main_axis(x, y)
         if visualization:
             checker = DetectionChecker(self.red_im, bin_red, a, b) 
@@ -260,15 +249,15 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
     try:
         detect_angle = AngleDetector(super_imposed, i, info, visualization)
         angles = detect_angle()
-        return (i / constants.FPS, 180 * angles[0] / np.pi, 180 * angles[1] / np.pi)
+        return (i / info.fps, 180 * angles[0] / np.pi, 180 * angles[1] / np.pi)
     except NoCenteredParticle:
         return (0, 0)
 
 def list_angle_detection(
-    image_list: List[str], 
+    image_list: List[str], fps: int,
     visualization: bool = False) -> Tuple[List[float], List[float]]:
     """Run the angle detection on a list of path and return angle and time."""
-    info = Info(mire_info)
+    info = Info(fps, mire_info)
     pool = mp.Pool(mp.cpu_count() - 1)
     angles = pool.starmap_async(analyse_image, [(i, image_path, info, visualization) for i, image_path in enumerate(image_list[:len(info.track_data)])]).get()
     pool.close()
@@ -286,8 +275,9 @@ if __name__ == "__main__":
     mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
 
     end = int(exp_info["final_flagella_frame"].values[0])
+
     # end = 10
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
-    angles = list_angle_detection(image_list, visualization=visualization)    
+    angles = list_angle_detection(image_list, fps= int(exp_info["fps"].values[0]),visualization=visualization)    
     save_data(angles, constants.FOLDER)
