@@ -69,12 +69,6 @@ def calculate_velocities(data: pd.DataFrame, fps: int) -> pd.DataFrame:
     data["vel_z"] = smooth_derivative(data["smooth_z"], 1 / fps)
 
     data["vel"] = np.sqrt(data["vel_x"] ** 2 + data["vel_y"] ** 2 + data["vel_z"] ** 2)
-    data["slope"] = - data["vel_x"] / data["vel_y"]
-    mire_info = MireInfo(constants.MIRE_INFO_PATH)
-    
-    shift = - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) / 2 + 100
-    data["b_coeff"] = - ( data["center_y"] + shift + mire_info.displacement[1]) * data["slope"] +\
-         (data["center_x"] + mire_info.displacement[0]-  (constants.IM_SIZE[1] / 2) + 100)
     return data
 
 

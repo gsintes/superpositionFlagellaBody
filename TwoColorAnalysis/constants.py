@@ -2,7 +2,7 @@
 
 import os
 
-FOLDER_UP = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-08-01/"
+FOLDER_UP = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-07-25/"
 FOLDER_NUM = "2023-09-01_17h59m58s"
 
 # FOLDER_UP = "/Users/sintes/Desktop/Test"
