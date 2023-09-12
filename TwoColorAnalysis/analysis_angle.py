@@ -46,7 +46,7 @@ class Analysis:
         self.folder = folder
         if folder != "":
             data = pd.read_csv(os.path.join(folder, data_file), delimiter=",")
-            time = data["Time"]
+            time = data["Time"] * 80 / self.fps
             angle = data[" FlagellaBody angle"]
         else:
             time = times
@@ -91,10 +91,7 @@ class Analysis:
     def _linear_interpolation(self) -> None:
         """Make a linear interpolation for the missing data."""
         angle_inter = list(self.cleaned_angles.copy())
-        print(self.fps)
-        times_inter = [k / self.fps for k in range(int(min(self.times) * 80), int(max(self.times) * 80) + 1)]
-        print(times_inter, self.times)
-        print(min(self.times), max(self.times))
+        times_inter = [k / self.fps for k in range(int(min(self.times) * self.fps), int(max(self.times) * self.fps) + 1)]
         diff_times = self.times[1: ] - self.times[:len(self.times) -1]
         for i, diff in enumerate(diff_times):
             if diff > 1.5 / self.fps:
@@ -104,7 +101,6 @@ class Analysis:
                     ang = self.cleaned_angles[i] + k * slope / self.fps
                     angle_inter.insert(i + k, ang)
         self.cleaned_times = times_inter.copy()
-        print(len(self.cleaned_times))
         self.cleaned_angles = angle_inter
 
     def _clean_data(self) -> None:
@@ -122,13 +118,12 @@ class Analysis:
         """Detect the extrema of the angles."""
         angles = np.array(self.cleaned_angles)
         differences = angles[1: ] - angles[:- 1]
-        print(len(self.cleaned_angles), len(self.cleaned_times))
         extrema = []
         for i, diff in enumerate(differences[: -1]):
             if diff * differences[i + 1] < 0:
                 try:
                     extrema.append((self.cleaned_times[i + 1], angles[i + 1]))
-                except IndexError:
+                except IndexError: #FIXME
                     pass
         extrema_a = np.array(extrema)
             
@@ -186,7 +181,7 @@ class Analysis:
         if visualization:
             plt.figure()
             plt.plot(self.times, self.angles, "-", label="raw")
-            plt.plot(self.cleaned_times, self.cleaned_angles, "-", label="Smooth")
+            # plt.plot(self.cleaned_times, self.cleaned_angles, "-", label="Smooth") #TODO Fixme
             plt.plot(self.extrema[:, 0], self.extrema[:, 1], "*r")
             plt.xlabel("Time (in s)")
             plt.ylabel("Angle (in degrees)")
@@ -223,9 +218,9 @@ if __name__ == "__main__":
     data_list: List[pd.Series] = []
     for _, info in analysis_data.iterrows():
         limits = info["limits"]
-        print(limits)
+        concentration = info["concentration"]
+        viscosity = info["viscosity"]
         if info["final_flagella_frame"] != 0 and type(limits) == str:
-            
             limit_list = info["limits"].split("/")
             folder = info["exp"]
             fps = info["fps"]
@@ -235,7 +230,10 @@ if __name__ == "__main__":
                 if lim != "":
                     
                     analysis = Analysis(limits=get_limits(lim), folder=folder, fps=fps)
-                    data_list.append(analysis(visualization=True))
+                    exp_data = analysis(visualization=True)
+                    exp_data["Concentration"] = concentration
+                    exp_data["Viscosity"] = viscosity
+                    data_list.append(exp_data)
 
     data = pd.DataFrame()
     data = pd.DataFrame(data_list)
