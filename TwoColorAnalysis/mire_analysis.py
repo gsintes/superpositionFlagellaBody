@@ -63,7 +63,7 @@ def manual_find_displacement(
     """Manually find the displacement in the image by clicking on a point."""
     fig = plt.figure()
     center = (red_mire.shape[0] // 2, red_mire.shape[1] // 2)
-    plt.imshow(superimpose.select_center_image(green_mire, center, 200))
+    plt.imshow(superimpose.select_center_image(green_mire, center, 1000))
     point_one = plt.ginput(1)[0]
     plt.close(fig)
     fig = plt.figure()
@@ -87,7 +87,6 @@ def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
 
     if visualization:
         check_im = superimpose.superposition(mire_im, res)
-        print(check_im)
         plt.figure()
         plt.imshow(check_im * 255)
         plt.show(block=True)

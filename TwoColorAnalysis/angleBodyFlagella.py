@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage import measure, exposure, morphology
 from scipy.ndimage import median_filter
+import cv2
 
 from skimage.filters import gaussian
 from skimage.filters.thresholding import threshold_li
@@ -33,7 +34,8 @@ class Info:
         self.fps = fps
         self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
          - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2)
-        
+
+      
 def li_binarization(image: np.ndarray) -> np.ndarray:
     """Binarize the image using the li algorithm."""
     t = threshold_li(image)
@@ -144,6 +146,9 @@ class AngleDetector:
         stretched = exposure.rescale_intensity(self.red_im, in_range=(p2, p98))
         filtered = median_filter(stretched, size=15)
         blur = gaussian(filtered, 2)
+
+
+        cv2.imwrite(f"/Users/sintes/Desktop/Flagella/{self.i}.png", (blur * 0.99 * 2 ** 8 / np.amax(blur)).astype("uint8"))
         
         bin_red = li_binarization(blur)
         bin_red = morphology.binary_closing(bin_red, footprint=np.ones((9, 9)))

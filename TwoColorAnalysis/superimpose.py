@@ -5,7 +5,6 @@ from typing import Tuple
 import os
 
 import matplotlib.image as mpim
-import matplotlib.pyplot as plt
 import numpy as np
 from skimage import exposure
 from skimage.filters.thresholding import threshold_otsu
@@ -116,7 +115,7 @@ def folder_superposition(
     mire_info: MireInfo):
     """Run the superposition and save all images in a folder."""
     
-    track_data = trackParsing.load_track_data()
+    track_data = trackParsing.load_track_data(folder_im)
     date_video = folder_im.split("/")
     date_video = date_video[len(date_video) - 1]
     save_dir = os.path.join(folder_save, "Videos_tracking", date_video)
@@ -146,8 +145,8 @@ def folder_superposition(
 
 if __name__ == "__main__":
     mire_info = MireInfo(constants.MIRE_INFO_PATH)
-    # parent_folder = "/Volumes/GUILLAUME/Ficoll Marty/Ficoll17%_20-11-05_1uLbactos_TRACKING"
-    # list_dir = [f for f in os.listdir(parent_folder) if not f.startswith(".")]
-    # for folder in list_dir[0: 1]:
-        # folder_superposition(os.path.join(parent_folder, folder), "/Users/sintes/Desktop", mire_info)
-    folder_superposition(constants.FOLDER, "/Users/sintes/Desktop", mire_info)
+    parent_folder = "/Volumes/Chains/Tracking_23-12-08"
+    list_dir = [f for f in os.listdir(parent_folder) if not (f.startswith(".") or "calib" in f) ]
+    for folder in list_dir:
+        folder_superposition(os.path.join(parent_folder, folder), "/Volumes/Chains/Tracking_23-12-08/superimposed", mire_info)
+    # folder_superposition(constants.FOLDER, "/Volumes/Chains/Tracking_23-12-08/superimposed", mire_info)

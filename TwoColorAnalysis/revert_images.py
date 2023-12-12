@@ -31,8 +31,8 @@ def main(args: argparse.ArgumentParser)-> None:
     if args.recursive:
         pool = mp.Pool(mp.cpu_count() - 1)
         subfolders = [(os.path.join(folder, sf), False) for sf in os.listdir(folder) if os.path.isdir(os.path.join(folder, sf))]
-        _ = pool.starmap_async(revert_folder, subfolders).get()
-        pool.close()
+        for f in subfolders:
+            revert_folder(f)
     else:
         revert_folder(folder, verbose)
     

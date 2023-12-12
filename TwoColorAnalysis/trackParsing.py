@@ -75,10 +75,10 @@ def calculate_velocities(data: pd.DataFrame, fps: int) -> pd.DataFrame:
 def load_track_data(
     folder: str = constants.FOLDER,
     file: str = constants.TRACK_FILE,
-    fps: float = 0) -> pd.DataFrame:
+    fps: float = 80) -> pd.DataFrame:
     """Load, parse and calculate velocities from track data."""
     data = parser_track(folder, file, fps)
-    data = smooth_trajectory(data, 40)
+    data = smooth_trajectory(data, 40) #TODO find intelligent way
     return calculate_velocities(data, fps)
 
 def load_info_exp(file:str, exp: str) -> pd.DataFrame:

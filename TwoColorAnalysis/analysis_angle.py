@@ -46,7 +46,7 @@ class Analysis:
         self.folder = folder
         if folder != "":
             data = pd.read_csv(os.path.join(folder, data_file), delimiter=",")
-            time = data["Time"] * 80 / self.fps
+            time = data["Time"] * 80 / self.fps #TODO remove when all code re runned
             angle = data[" FlagellaBody angle"]
         else:
             time = times
@@ -88,7 +88,7 @@ class Analysis:
                 angles_c[i] = ang - 180
         self.cleaned_angles = angles_c.copy()
 
-    def _linear_interpolation(self) -> None:
+    def _linear_interpolation(self) -> None: #FIXME
         """Make a linear interpolation for the missing data."""
         angle_inter = list(self.cleaned_angles.copy())
         times_inter = [k / self.fps for k in range(int(min(self.times) * self.fps), int(max(self.times) * self.fps) + 1)]
@@ -102,6 +102,10 @@ class Analysis:
                     angle_inter.insert(i + k, ang)
         self.cleaned_times = times_inter.copy()
         self.cleaned_angles = angle_inter
+        print("Time", len(self.times), "Cleaned times", len(self.cleaned_times))
+        print(len(self.cleaned_times) - len(self.times))
+        print("Angle", len(self.angles), "Cleaned_angles", len(self.cleaned_angles))
+        print(len(self.cleaned_angles) - len(self.angles))
 
     def _clean_data(self) -> None:
         """
@@ -186,7 +190,7 @@ class Analysis:
             plt.xlabel("Time (in s)")
             plt.ylabel("Angle (in degrees)")
             plt.legend()
-            plt.savefig(f"{constants.FOLDER_UP}/Wobbling/angle_{Analysis.count_data}.png")
+            plt.savefig(f"{constants.FOLDER_UP}/Wobbling/angle_{Analysis.count_data}.png")#TODO change naming
             plt.close()
 
             plt.figure()
