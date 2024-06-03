@@ -17,7 +17,7 @@ def revert_folder(folder: str, verbose: float=False) -> None:
     """Revert the images in the folder."""
     list_im = [os.path.join(folder, f) for f in os.listdir(folder) if (f.endswith(".tif") and not f.startswith("."))]
     for k, im_name in enumerate(list_im):
-        if verbose and k % 10 == 0: 
+        if verbose and k % 10 == 0:
             print(f"{100 * k/len(list_im):.2f}%")
         im = Image.open(im_name)
         out = im.rotate(-90, expand=True)
@@ -35,7 +35,7 @@ def main(args: argparse.ArgumentParser)-> None:
             revert_folder(f)
     else:
         revert_folder(folder, verbose)
-    
+
 
 if __name__=="__main__":
     args = parse_arguments()

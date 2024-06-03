@@ -32,13 +32,13 @@ class Convoluter:
         self.mask = mask
         self.mask.center = (image.shape[0] // 2, image.shape[1] // 2)
         self.mask_im = self.mask.make_im(self.image.shape)
-        
+
     def __call__(self, visualization : bool = False) -> np.ndarray:
         """Does the convolution product between the image and the mask."""
         ft_im = np.fft.rfft2(self.image)
         ft_mask = np.fft.rfft2(self.mask_im)
         ft_conv = ft_mask * ft_im
-        conv = np.fft.irfft2(ft_conv, s=self.image.shape) 
+        conv = np.fft.irfft2(ft_conv, s=self.image.shape)
         conv_shift = np.zeros(conv.shape)
         for x in range(conv.shape[0]):
             for y in range(conv.shape[1]):
@@ -53,7 +53,7 @@ class BodyDetection:
     def __init__(self, image: np.ndarray, a: int, b: int) -> None:
         self.angle = 0 # in degree
         self.image = image
-        self.a = a 
+        self.a = a
         self.b = b
 
     def detection(self, step: int = 10, lim: int = 180, visualization: bool = False) -> None:
@@ -64,7 +64,7 @@ class BodyDetection:
             convoluter = Convoluter(self.image, Rectangle(self.a, self.b, (0, 0), self.angle * np.pi / 180))
             angles.append(self.angle)
             convolutions.append(convoluter())
-            self.angle += step 
+            self.angle += step
         sum = np.zeros(self.image.shape)
         for conv in convolutions:
             sum += conv
@@ -77,7 +77,7 @@ class BodyDetection:
             if val > max:
                 max = val
                 self.best_angle = angles[i]
-        
+
         if visualization:
             plt.figure()
             plt.imshow(sum.transpose())
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
     # image = mpim.imread(image_list[1300])
     # super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
-    # super_imposed = superimpose.select_center_image(super_imposed, 100) 
+    # super_imposed = superimpose.select_center_image(super_imposed, 100)
     # image = super_imposed[:, :, 1]
 
     # bd = BodyDetection(image, 40, 7)

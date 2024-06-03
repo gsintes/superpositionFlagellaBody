@@ -11,14 +11,14 @@ import martinez_data as marti
 
 parent_folder = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360"
 
-subfolders = [os.path.join(parent_folder, f) 
+subfolders = [os.path.join(parent_folder, f)
               for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f)) and f.startswith("SwimmingPVP")]
 
 viscosity_list: List[float] = []
 velocity_list: List[float] = []
 
 for subfolder in subfolders:
-    experiments = [f for f in os.listdir(subfolder) if f.startswith("202") and os.path.isdir(os.path.join(subfolder, f)) 
+    experiments = [f for f in os.listdir(subfolder) if f.startswith("202") and os.path.isdir(os.path.join(subfolder, f))
                    and not(f.endswith("calib"))]
     for exp in experiments:
         exp_info = load_info_exp(os.path.join(subfolder, "exp-info.csv"), exp)

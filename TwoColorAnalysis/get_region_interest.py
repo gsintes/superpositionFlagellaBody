@@ -59,9 +59,8 @@ if __name__ == "__main__":
                 again = False
             except EmptyDataException:
                 again = False
-            
+
     data = pd.DataFrame()
     data["Folder"] = folders
     data["Limits"] = limits
     data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"), index=False)
-        

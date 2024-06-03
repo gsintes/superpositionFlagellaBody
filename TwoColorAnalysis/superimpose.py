@@ -22,7 +22,7 @@ def contrast_enhancement(image: np.ndarray) -> np.ndarray:
         return image_enhanced
     elif len(image.shape) == 2:
         p2, p98 = np.percentile(image, (1, 99))
-        img_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))        
+        img_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))
         return img_rescale
     else:
         raise IndexError("Not the good dimension.")
@@ -81,7 +81,7 @@ def shift_image(
             image = image[:delta_x, :]
             image = np.concatenate((np.zeros((-delta_x, image.shape[1])), image), axis=0)
 
-        if delta_y < 0: 
+        if delta_y < 0:
             image = image[:, :delta_y]
             image = np.concatenate((np.zeros((image.shape[0], -delta_y, )), image), axis=1)
         if delta_y > 0:
@@ -114,7 +114,6 @@ def folder_superposition(
     folder_save: str,
     mire_info: MireInfo):
     """Run the superposition and save all images in a folder."""
-    
     track_data = trackParsing.load_track_data(folder_im)
     date_video = folder_im.split("/")
     date_video = date_video[len(date_video) - 1]
@@ -126,7 +125,7 @@ def folder_superposition(
         os.makedirs(save_dir)
     image_list = [os.path.join(folder_im, f) for f in os.listdir(folder_im) if (f.endswith(".tif") and not f.startswith("."))]
     for i, im_path in enumerate(image_list[:-1]):
-        im_test = mpim.imread(im_path) 
+        im_test = mpim.imread(im_path)
         im_test = im_test / 2 ** 16
 
         super_imposed = superposition(im_test, mire_info)
@@ -134,7 +133,7 @@ def folder_superposition(
             super_imposed,
             center=(int(track_data["center_x"][i]) - mire_info.middle_line, int(track_data["center_y"][i])),
             size=100)
-        super_imposed = contrast_enhancement(super_imposed) 
+        super_imposed = contrast_enhancement(super_imposed)
         # plt.figure()
         # plt.imshow(im_test, cmap="gray")
         # plt.plot(int(track_data["center_y"][i]), int(track_data["center_x"][i]) , ".r")

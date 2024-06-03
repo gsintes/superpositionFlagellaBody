@@ -10,7 +10,7 @@ import matplotlib.image as mpim
 from scipy.signal import correlate2d
 
 import constants
-import superimpose 
+import superimpose
 from mire_info import MireInfo
 
 
@@ -46,7 +46,7 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
 #     cross_corr = correlate2d(
 #         binarize(select_center_image(red_mire, 100)),
 #         binarize(select_center_image(green_mire, 100)))
-    
+
 #     i, j = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
 #     delta_x = 1 + i - select_center_image(red_mire, 100).shape[0]
 #     delta_y =  1 + j - select_center_image(red_mire, 100).shape[1]
@@ -77,7 +77,7 @@ def manual_find_displacement(
 
 def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
     """Perform the mire analysis"""
-    mire_im = mpim.imread(mire_path) 
+    mire_im = mpim.imread(mire_path)
     mire_im = mire_im / 2 ** 16
     middle_line = find_separation(mire_im)
     red_mire, green_mire = superimpose.split_image(mire_im, middle_line)

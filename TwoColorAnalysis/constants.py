@@ -1,6 +1,6 @@
 """Define the useful constants."""
 
-import os 
+import os
 
 FOLDER_UP = "/Volumes/Chains/Tracking_23-12-08"
 # FOLDER_NUM = "2023-09-01_18h54m34s"

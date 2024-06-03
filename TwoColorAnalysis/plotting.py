@@ -75,14 +75,14 @@ if __name__=="__main__":
     file = "/Users/sintes/Library/CloudStorage/OneDrive-Personal/These/Wobbling/all_wobbling_data.csv"
     data = load_data(file)
     data["Count_freq"] = 1 / data["Period"]
-    
+
     filters = ["", "filtered"]
 
     for filter in filters:
         if filter == "filtered":
             dataLC = filtering_data(data)
-        else: 
-            dataLC = data  
+        else:
+            dataLC = data
         plots(dataLC, filter)
 
 

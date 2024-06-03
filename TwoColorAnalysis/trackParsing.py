@@ -32,7 +32,7 @@ def parser_track(
             z.append(float(expression.group(3)))
             center_x.append(float(expression.group(4)))
             center_y.append(float(expression.group(5)))
-            time.append(i / fps) 
+            time.append(i / fps)
     data = pd.DataFrame()
     data["time"] = time
     data["x"] = x

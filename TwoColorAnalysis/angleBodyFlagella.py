@@ -35,7 +35,7 @@ class Info:
         self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
          - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2)
 
-      
+
 def li_binarization(image: np.ndarray) -> np.ndarray:
     """Binarize the image using the li algorithm."""
     t = threshold_li(image)
@@ -45,7 +45,7 @@ def li_binarization(image: np.ndarray) -> np.ndarray:
 def pca(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Return the main component of the detected region."""
     M = np.cov(x, y)
-    val, vect = np.linalg.eig(M) 
+    val, vect = np.linalg.eig(M)
     val = list(val)
     i = val.index(max(val))
     return vect[:, i]
@@ -89,13 +89,13 @@ def make_bin_im(X: np.ndarray, Y: np.ndarray, shape:Tuple[int, int]) -> np.ndarr
 def find_main_axis(x: np.ndarray, y: np.ndarray) -> Tuple[float, float, Tuple[float, float]]:
     """
     Find the main axis of a set of points using pca.
-    
+
     Returns: a, b: coeff of the line : y = a * x + b
     """
     vect = pca(x, y)
     if vect[0] != 0:
         a = vect[1] / vect[0]
-    else: 
+    else:
         a =0
     b = np.mean(y) - a * np.mean(x)
     return a, b, vect
@@ -117,7 +117,7 @@ class DetectionChecker:
         axis[0].set_xlim([0, self.image.shape[1]])
         axis[0].imshow(self.image, cmap="gray")
         axis[0].plot(self.a * x + self.b, x, "-b", linewidth=1)
-        
+
         axis[1].imshow(self.bin, cmap="gray")
         axis[1].plot(self.a * x + self.b, x, "-b", linewidth=1)
         axis[1].set_ylim([self.image.shape[0], 0])
@@ -140,7 +140,7 @@ class AngleDetector:
         self.green_im = self.super_imposed[:, :, 1]
         self.red_im = self.super_imposed[:, :, 0]
 
-    def detect_flagella(self, visualization: bool = False) -> Tuple[float, float, Tuple[float, float]]: 
+    def detect_flagella(self, visualization: bool = False) -> Tuple[float, float, Tuple[float, float]]:
         """Detect the flagella in the red image."""
         p2, p98 = np.percentile(self.red_im, (2, 98))
         stretched = exposure.rescale_intensity(self.red_im, in_range=(p2, p98))
@@ -149,7 +149,7 @@ class AngleDetector:
 
 
         cv2.imwrite(f"/Users/sintes/Desktop/Flagella/{self.i}.png", (blur * 0.99 * 2 ** 8 / np.amax(blur)).astype("uint8"))
-        
+
         bin_red = li_binarization(blur)
         bin_red = morphology.binary_closing(bin_red, footprint=np.ones((9, 9)))
         x, y, _ = keep_bigger_particle(bin_red, center=False)
@@ -157,7 +157,7 @@ class AngleDetector:
 
         a, b, vect = find_main_axis(x, y)
         if visualization:
-            checker = DetectionChecker(self.red_im, bin_red, a, b) 
+            checker = DetectionChecker(self.red_im, bin_red, a, b)
             checker()
         return a, b, vect
 
@@ -165,14 +165,14 @@ class AngleDetector:
         """Detect the body in the green image."""
         detector = bd.BodyDetection(self.green_im, a=40, b=7)
         rectangle = detector(False)
-    
+
         bin_green = rectangle.make_im((200, 200))
         x, y, _ = keep_bigger_particle(bin_green, center=False)
         bin_green = make_bin_im(x, y, bin_green.shape)
 
         a, b, vect = find_main_axis(x, y)
         if visualization:
-            checker = DetectionChecker(self.green_im, bin_green, a, b, rectangle=rectangle) 
+            checker = DetectionChecker(self.green_im, bin_green, a, b, rectangle=rectangle)
             checker()
         return a, b, vect
 
@@ -206,14 +206,14 @@ class AngleDetector:
             plt.imshow(super_imposed_en)
             plt.plot(a0 * x + b0, x, "-g", linewidth=1)
             plt.plot(a1 * x + b1, x, "-r", linewidth=1)
-            
+
             plt.ylim([self.super_imposed.shape[0], 0])
             plt.xlim([0, self.super_imposed.shape[1]])
             # plt.draw()
             # plt.pause(0.001)
-            plt.savefig(os.path.join(constants.FIG_FOLDER, f"{self.i}.png"))    
+            plt.savefig(os.path.join(constants.FIG_FOLDER, f"{self.i}.png"))
             # plt.clf()
-            plt.close("all") 
+            plt.close("all")
         return angle_fb, angle_vb
 
 
@@ -242,7 +242,7 @@ def get_center_body(super_imposed: np.ndarray, center_track: Tuple[int, int]):
 
 def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
     """Run the analysis on an image."""
-    im_test = mpim.imread(image_path) 
+    im_test = mpim.imread(image_path)
     im_test = im_test / 2 ** 16
     super_imposed = superimpose.shift_image(superimpose.superposition(im_test, info.mire_info), info.mire_info.displacement)
     center_track = (int(info.track_data["center_x"][i]) - info.mire_info.middle_line, int(info.track_data["center_y"][i]))
@@ -285,5 +285,5 @@ if __name__ == "__main__":
     # end = 10
     image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
-    angles = list_angle_detection(image_list, fps=fps,visualization=visualization)    
+    angles = list_angle_detection(image_list, fps=fps,visualization=visualization)
     save_data(angles, constants.FOLDER)

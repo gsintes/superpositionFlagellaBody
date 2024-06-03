@@ -9,7 +9,7 @@ class Mask():
     def __init__(self, center: Tuple[int, int], angle: float) -> None:
         self.center = center
         self.angle = angle
-    
+
     def make_im(self, im_shape: Tuple[int, int]) -> np.ndarray:
         raise NotImplementedError
 
@@ -50,7 +50,7 @@ class Rectangle(Mask):
         self.length = length
         self.width = width
         super().__init__(center, angle)
-    
+
     def make_im(self,im_shape: Tuple[int, int])-> np.ndarray:
         """Make a white ellispe in an image."""
         x0 = self.center[0]
@@ -63,12 +63,12 @@ class Rectangle(Mask):
         for x in range(im_shape[0]):
             for y in range(im_shape[1]):
                 xp = np.cos(self.angle) * x + np.sin(self.angle) * y
-                yp = - np.sin(self.angle) * x + np.cos(self.angle) * y 
+                yp = - np.sin(self.angle) * x + np.cos(self.angle) * y
                 if - self.length // 2 < (xp - x0p) < self.length // 2:
                     if - self.width // 2 < yp - y0p < self.width // 2:
                         im[x, y] = 1
         return im
-    
+
     def border(self,im_shape: Tuple[int, int])-> Tuple[List[int], List[int]]:
         """Give the border of the rectangle."""
         x0 = self.center[0]
@@ -81,7 +81,7 @@ class Rectangle(Mask):
         for x in range(im_shape[0]):
             for y in range(im_shape[1]):
                 xp = np.cos(self.angle) * x + np.sin(self.angle) * y
-                yp = - np.sin(self.angle) * x + np.cos(self.angle) * y 
+                yp = - np.sin(self.angle) * x + np.cos(self.angle) * y
                 if self.length / 2 - 0.5 <= np.abs(xp - x0p) <= self.length / 2 + 0.5:
                     if np.abs(yp - y0p) <= self.width // 2:
                         X.append(x)

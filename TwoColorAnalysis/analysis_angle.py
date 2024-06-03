@@ -55,7 +55,7 @@ class Analysis:
         lim_track0 = int(round(min(time) * self.fps)) + limits[0]
         lim_track1 = int(round(min(time) * self.fps)) + limits[1]
         self.track_data: pd.DataFrame = load_track_data(folder=folder, fps=self.fps)[lim_track0: lim_track1]
-        
+
         self.window_size = 0.25
         self.times = time
         self.angles = angle.copy()
@@ -110,7 +110,7 @@ class Analysis:
     def _clean_data(self) -> None:
         """
         Prepare the data.
-        
+
         window_size: float : The timestep (in s) for smoothing.
         """
         self._angle_shift()
@@ -130,7 +130,7 @@ class Analysis:
                 except IndexError: #FIXME
                     pass
         extrema_a = np.array(extrema)
-            
+
 
         diff = extrema_a[1:, 0] - extrema_a[:-1, 0]
         th_diff = 0.6 * np.mean(diff)
@@ -156,7 +156,7 @@ class Analysis:
         self.period = np.mean(np.abs(diff)) * 2
         self.std_period = np.std(np.abs(diff)) * 2
 
-    def __call__(self, visualization: bool) -> pd.Series: 
+    def __call__(self, visualization: bool) -> pd.Series:
         """Run the analysis on the section of the data."""
         self._clean_data()
         self._detect_extrema()
@@ -232,7 +232,7 @@ if __name__ == "__main__":
                 folder = os.path.join(constants.FOLDER_UP, folder)
             for lim in limit_list:
                 if lim != "":
-                    
+
                     analysis = Analysis(limits=get_limits(lim), folder=folder, fps=fps)
                     exp_data = analysis(visualization=True)
                     exp_data["Concentration"] = concentration
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     data = pd.DataFrame()
     data = pd.DataFrame(data_list)
     data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
-    
+
     data["Count_freq"] = 1 / data["Period"]
     x = np.linspace(min(data["Fourier_mode"]), max(data["Fourier_mode"]))
     plt.figure()
