@@ -9,7 +9,7 @@ import numpy as np
 from trackParsing import load_track_data, load_info_exp
 import martinez_data as marti
 
-parent_folder = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360"
+parent_folder = "/Volumes/Guillaume /SwimmingPVP360"
 
 subfolders = [os.path.join(parent_folder, f)
               for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f)) and f.startswith("SwimmingPVP")]
@@ -29,6 +29,7 @@ for subfolder in subfolders:
         track_data = load_track_data(os.path.join(subfolder, exp), fps=fps)
         track_data = track_data.iloc[:limit]
         vel = track_data["vel"].mean()
+        exp_info["vel"] = vel
         velocity_list.append(vel)
 
 viscosity_list = np.array(viscosity_list)
