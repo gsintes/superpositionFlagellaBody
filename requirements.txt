@@ -5,3 +5,4 @@ scipy
 pandas
 Pillow
 pytest
+seaborn

@@ -23,7 +23,7 @@ if __name__ == "__main__":
             fps = exp_info["fps"].values[0]
             track_data = load_track_data(os.path.join(subfolder, exp), fps=fps)
             track_data = track_data.iloc[:limit]
-            vel = track_data["vel"].mean()
+            vel = track_data["vel"].median()
             exp_info["vel"] = vel
             data.append(exp_info)
     data_pd = pd.concat(data)
