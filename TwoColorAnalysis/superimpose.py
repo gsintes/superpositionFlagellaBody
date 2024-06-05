@@ -10,7 +10,6 @@ from skimage import exposure
 from skimage.filters.thresholding import threshold_otsu
 
 from mire_info import MireInfo
-import trackParsing
 
 def contrast_enhancement(image: np.ndarray) -> np.ndarray:
     """Enhance the contrast of the image."""
@@ -49,7 +48,7 @@ def select_center_image(image: np.ndarray, center: Tuple[int, int], size: int = 
 def split_image(
     image: np.ndarray,
     separation: int) -> Tuple[np.ndarray, np.ndarray]:
-    """Split the image at the separation and return the two images off the same size, complete by zeros."""
+    """Split the image at the separation and return the two images at the size of the smaller."""
     diff_sep = 2 * (separation - image.shape[0] // 2)
     if diff_sep > 0:
         top_im = image[diff_sep:separation, :]
@@ -60,66 +59,54 @@ def split_image(
     return top_im, bottom_im
 
 def shift_image(
-    image: np.ndarray,
+    bottom_image: np.ndarray,
+    top_image: np.ndarray,
     displacement: Tuple[int, int]) -> np.ndarray:
     """Shift the image and fill boundaries with black."""
-    if len(image.shape) == 3:
-        shifted = image.copy()
-        for i in range(3):
-            shifted[:, :, i] = shift_image(image[:, :, i], displacement)
-        return shifted
-    elif len(image.shape) == 2:
-        delta_x = displacement[0]
-        delta_y = displacement[1]
-        if delta_x > 0:
-            image = image[delta_x:, :]
-            image = np.concatenate((image, np.zeros((delta_x, image.shape[1]))), axis=0)
-        if delta_x < 0:
-            image = image[:delta_x, :]
-            image = np.concatenate((np.zeros((-delta_x, image.shape[1])), image), axis=0)
+    assert len(bottom_image.shape) == 2
+    assert len(top_image.shape) == 2
+    delta_x = displacement[0]
+    delta_y = displacement[1]
+    if delta_x > 0:
+        bottom_image = bottom_image[delta_x:, :]
+        top_image = top_image[:-delta_x, :]
+    if delta_x < 0:
+        bottom_image = bottom_image[:delta_x, :]
+        top_image = top_image[-delta_x:, :]
 
-        if delta_y < 0:
-            image = image[:, :delta_y]
-            image = np.concatenate((np.zeros((image.shape[0], -delta_y, )), image), axis=1)
-        if delta_y > 0:
-            image = image[:, delta_y:]
-            image = np.concatenate((image, np.zeros((image.shape[0], delta_y))), axis=1)
-        return image
-    else:
-        raise IndexError("Not the good dimension.")
+    if delta_y < 0:
+        bottom_image = bottom_image[:, :delta_y]
+        top_image = top_image[:, -delta_y:]
+    if delta_y > 0:
+        bottom_image = bottom_image[:, delta_y:]
+        top_image = top_image[:, delta_y:]
+    return bottom_image, top_image
+
 
 
 def super_impose_two_im(
-    green_im: np.ndarray,
-    red_im: np.ndarray,
+    bottom_im: np.ndarray,
+    top_im: np.ndarray,
     displacement: Tuple[int,int]) -> np.ndarray:
     """Super impose the green and red part."""
-    shift_green = shift_image(green_im, displacement)
-    super_imposed = np.array([red_im.transpose(),
-     shift_green.transpose(),
-     np.zeros(green_im.shape).transpose()])
+    bottom_im, top_im = shift_image(bottom_im, top_im, displacement)
+    super_imposed = np.array([top_im.transpose(),
+     bottom_im.transpose(),
+     np.zeros(bottom_im.shape).transpose()])
     return super_imposed.transpose()
 
 
 def superposition(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
     """Superimpose the two colors according to the info of the mire."""
-    green_im, red_im = split_image(image, mire_info.middle_line)
-    return super_impose_two_im(green_im, red_im, mire_info.displacement)
+    top_im, bottom_im = split_image(image, mire_info.middle_line)
+    return super_impose_two_im(top_im, bottom_im, mire_info.displacement)
 
-def crop_to_minimum_size(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
-    """Crop the image to the minimum size. """
-    print(image.shape)
-    if len(image.shape) == 3:
-        return image[image.shape[1] - mire_info.middle_line :, :, :]
-
-    return image[:image.shape[1] - mire_info.middle_line, :]
 
 def folder_superposition(
     folder_im: str,
     folder_save: str,
     mire_info: MireInfo):
     """Run the superposition and save all images in a folder."""
-    track_data = trackParsing.load_track_data(folder_im)
     date_video = folder_im.split("/")
     date_video = date_video[len(date_video) - 1]
     save_dir = os.path.join(folder_save, "Videos_tracking", date_video)
@@ -132,12 +119,7 @@ def folder_superposition(
     for i, im_path in enumerate(image_list[:-1]):
         im_test = mpim.imread(im_path)
         im_test = im_test / 2 ** 16
-
         super_imposed = superposition(im_test, mire_info)
-        # super_imposed = select_center_image(
-        #     super_imposed,
-        #     center=(int(track_data["center_x"][i]) - mire_info.middle_line, int(track_data["center_y"][i])),
-        #     size=200)
         super_imposed = contrast_enhancement(super_imposed)
         mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
 
