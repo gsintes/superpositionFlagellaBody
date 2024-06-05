@@ -9,7 +9,6 @@ import numpy as np
 from skimage import exposure
 from skimage.filters.thresholding import threshold_otsu
 
-import constants
 from mire_info import MireInfo
 import trackParsing
 
@@ -51,16 +50,14 @@ def split_image(
     image: np.ndarray,
     separation: int) -> Tuple[np.ndarray, np.ndarray]:
     """Split the image at the separation and return the two images off the same size, complete by zeros."""
-    red_im = image[:separation, :]
-    green_im = image[separation:, :]
     diff_sep = 2 * (separation - image.shape[0] // 2)
-    to_add = np.zeros((np.abs(diff_sep), image.shape[1]))
-
     if diff_sep > 0:
-        green_im = np.concatenate((green_im, to_add))
+        top_im = image[diff_sep:separation, :]
+        bottom_im = image[separation:, :]
     if diff_sep < 0:
-        red_im = np.concatenate((to_add, red_im))
-    return red_im, green_im
+        top_im = image[:separation, :]
+        bottom_im = image[separation:-diff_sep, :]
+    return top_im, bottom_im
 
 def shift_image(
     image: np.ndarray,
@@ -97,17 +94,25 @@ def super_impose_two_im(
     red_im: np.ndarray,
     displacement: Tuple[int,int]) -> np.ndarray:
     """Super impose the green and red part."""
-    shift_red = shift_image(red_im, displacement)
-    super_imposed = np.array([shift_red.transpose(),
-     green_im.transpose(),
+    shift_green = shift_image(green_im, displacement)
+    super_imposed = np.array([red_im.transpose(),
+     shift_green.transpose(),
      np.zeros(green_im.shape).transpose()])
     return super_imposed.transpose()
 
 
 def superposition(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
     """Superimpose the two colors according to the info of the mire."""
-    red_im, green_im = split_image(image, mire_info.middle_line)
+    green_im, red_im = split_image(image, mire_info.middle_line)
     return super_impose_two_im(green_im, red_im, mire_info.displacement)
+
+def crop_to_minimum_size(image: np.ndarray, mire_info: MireInfo) -> np.ndarray:
+    """Crop the image to the minimum size. """
+    print(image.shape)
+    if len(image.shape) == 3:
+        return image[image.shape[1] - mire_info.middle_line :, :, :]
+
+    return image[:image.shape[1] - mire_info.middle_line, :]
 
 def folder_superposition(
     folder_im: str,
@@ -129,23 +134,18 @@ def folder_superposition(
         im_test = im_test / 2 ** 16
 
         super_imposed = superposition(im_test, mire_info)
-        super_imposed = select_center_image(
-            super_imposed,
-            center=(int(track_data["center_x"][i]) - mire_info.middle_line, int(track_data["center_y"][i])),
-            size=100)
+        # super_imposed = select_center_image(
+        #     super_imposed,
+        #     center=(int(track_data["center_x"][i]) - mire_info.middle_line, int(track_data["center_y"][i])),
+        #     size=200)
         super_imposed = contrast_enhancement(super_imposed)
-        # plt.figure()
-        # plt.imshow(im_test, cmap="gray")
-        # plt.plot(int(track_data["center_y"][i]), int(track_data["center_x"][i]) , ".r")
-        # plt.savefig(os.path.join(save_dir, f"{i}.png"))
-        # plt.close()
         mpim.imsave(os.path.join(save_dir, f"{i}.png"), super_imposed)
 
 
 if __name__ == "__main__":
-    mire_info = MireInfo(constants.MIRE_INFO_PATH)
-    parent_folder = "/Volumes/Chains/Tracking_23-12-08"
-    list_dir = [f for f in os.listdir(parent_folder) if not (f.startswith(".") or "calib" in f) ]
+    mire_info = MireInfo("/Volumes/Chains/2colors0502/2024-05-02_17h43m35s_calib/mire_info.json")
+    parent_folder = "/Volumes/Chains/2colors0502"
+    list_dir = [f for f in os.listdir(parent_folder) if not("calib" in f) and f.startswith("202") and os.path.isdir(os.path.join(parent_folder, f))]
     for folder in list_dir:
-        folder_superposition(os.path.join(parent_folder, folder), "/Volumes/Chains/Tracking_23-12-08/superimposed", mire_info)
+        folder_superposition(os.path.join(parent_folder, folder), parent_folder, mire_info)
     # folder_superposition(constants.FOLDER, "/Volumes/Chains/Tracking_23-12-08/superimposed", mire_info)

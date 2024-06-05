@@ -1,5 +1,5 @@
 """Perform the analysis of the mire image."""
-
+import os
 from typing import Tuple
 from statistics import median
 
@@ -22,7 +22,7 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
         profile = mire_im[:, loc_profile] / max(mire_im[:, loc_profile])
         smooth_prof = superimpose.moving_average(profile, 20)
         diff = smooth_prof[401: 651] - smooth_prof[400 : 650]
-        separators.append(405 + list(diff).index(min(diff)))
+        separators.append(405 + list(diff).index(max(diff)))
     separation = median(separators)
     if visualization:
         plt.figure()
@@ -62,12 +62,12 @@ def manual_find_displacement(
     red_mire: np.ndarray) -> Tuple[int, int]:
     """Manually find the displacement in the image by clicking on a point."""
     fig = plt.figure()
-    center = (red_mire.shape[0] // 2, red_mire.shape[1] // 2)
+    center = (red_mire.shape[1] // 2, red_mire.shape[0] // 2)
     plt.imshow(superimpose.select_center_image(green_mire, center, 1000))
     point_one = plt.ginput(1)[0]
     plt.close(fig)
     fig = plt.figure()
-    plt.imshow(superimpose.select_center_image(red_mire, center, 200))
+    plt.imshow(superimpose.select_center_image(red_mire, center, 1000))
     point_two = plt.ginput(1)[0]
     plt.close(fig)
 
@@ -79,7 +79,7 @@ def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
     """Perform the mire analysis"""
     mire_im = mpim.imread(mire_path)
     mire_im = mire_im / 2 ** 16
-    middle_line = find_separation(mire_im)
+    middle_line = find_separation(mire_im, visualization=True)
     red_mire, green_mire = superimpose.split_image(mire_im, middle_line)
 
     displacement = manual_find_displacement(green_mire, red_mire)
@@ -87,11 +87,14 @@ def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
 
     if visualization:
         check_im = superimpose.superposition(mire_im, res)
+        check_im = superimpose.contrast_enhancement(check_im)
         plt.figure()
-        plt.imshow(check_im * 255)
+        plt.imshow(check_im)
         plt.show(block=True)
     return res
 
 if __name__ == "__main__":
-    mire_info = mire_analysis(constants.MIRE_PATH)
-    mire_info.save(constants.MIRE_INFO_PATH)
+    mire_path = "/Volumes/Chains/2colors0502 /2024-05-02_17h43m35s_calib"
+    im = "Image0007164.tif"
+    mire_info = mire_analysis(os.path.join(mire_path, im))
+    mire_info.save(os.path.join(mire_path, "mire_info.json"))
