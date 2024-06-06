@@ -78,6 +78,7 @@ def manual_find_displacement(
 def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
     """Perform the mire analysis"""
     mire_im = mpim.imread(mire_path)
+    mire_folder = os.path.dirname(mire_path)
     mire_im = mire_im / 2 ** 16
     middle_line = find_separation(mire_im, visualization=True)
     red_mire, green_mire = superimpose.split_image(mire_im, middle_line)
@@ -90,11 +91,12 @@ def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
         check_im = superimpose.contrast_enhancement(check_im)
         plt.figure()
         plt.imshow(check_im)
+        plt.savefig(os.path.join(mire_folder, "check.png"))
         plt.show(block=True)
     return res
 
 if __name__ == "__main__":
-    mire_path = "/Volumes/Chains/2colors0502 /2024-05-02_17h43m35s_calib"
+    mire_path = "/Volumes/Chains/2colors0502/2024-05-02_17h43m35s_calib"
     im = "Image0007164.tif"
     mire_info = mire_analysis(os.path.join(mire_path, im))
     mire_info.save(os.path.join(mire_path, "mire_info.json"))

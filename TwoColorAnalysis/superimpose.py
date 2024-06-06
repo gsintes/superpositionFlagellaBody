@@ -19,8 +19,8 @@ def contrast_enhancement(image: np.ndarray) -> np.ndarray:
             image_enhanced[:, :, i] = contrast_enhancement(image_enhanced[:, :, i])
         return image_enhanced
     elif len(image.shape) == 2:
-        p2, p98 = np.percentile(image, (1, 99))
-        img_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))
+        p15, p100 = np.percentile(image, (15, 100))
+        img_rescale = exposure.rescale_intensity(image, in_range=(p15, p100 + 3))
         return img_rescale
     else:
         raise IndexError("Not the good dimension.")
@@ -55,7 +55,7 @@ def split_image(
         bottom_im = image[separation:, :]
     if diff_sep < 0:
         top_im = image[:separation, :]
-        bottom_im = image[separation:-diff_sep, :]
+        bottom_im = image[separation:diff_sep, :]
     return top_im, bottom_im
 
 def shift_image(
@@ -125,8 +125,8 @@ def folder_superposition(
 
 
 if __name__ == "__main__":
-    mire_info = MireInfo("/Volumes/Chains/2colors0502/2024-05-02_17h43m35s_calib/mire_info.json")
-    parent_folder = "/Volumes/Chains/2colors0502"
+    mire_info = MireInfo("/Volumes/Chains/2colors0430/2024-04-30_17h12m21s_calib/mire_info.json")
+    parent_folder = "/Volumes/Chains/2colors0430/"
     list_dir = [f for f in os.listdir(parent_folder) if not("calib" in f) and f.startswith("202") and os.path.isdir(os.path.join(parent_folder, f))]
     for folder in list_dir:
         folder_superposition(os.path.join(parent_folder, folder), parent_folder, mire_info)
