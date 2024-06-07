@@ -96,7 +96,7 @@ def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
     return res
 
 if __name__ == "__main__":
-    mire_path = "/Volumes/Chains/2colors0430/2024-04-30_17h12m21s_calib"
-    im = "Image0004725.tif"
+    mire_path = "/Users/sintes/Desktop/Test/2023-07-25_18h06m22s_calib"
+    im = "Image0011742.tif"
     mire_info = mire_analysis(os.path.join(mire_path, im))
     mire_info.save(os.path.join(mire_path, "mire_info.json"))

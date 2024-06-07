@@ -90,8 +90,8 @@ def super_impose_two_im(
     displacement: Tuple[int,int]) -> np.ndarray:
     """Super impose the green and red part."""
     bottom_im, top_im = shift_image(bottom_im, top_im, displacement)
-    super_imposed = np.array([top_im.transpose(),
-     bottom_im.transpose(),
+    super_imposed = np.array([bottom_im.transpose(),
+     top_im.transpose(),
      np.zeros(bottom_im.shape).transpose()])
     return super_imposed.transpose()
 

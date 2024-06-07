@@ -4,7 +4,7 @@ import os
 
 FOLDER_UP = "/home/guillaume/NAS/SwimmingPVP360/SwimmingPVP_23-07-25"
 
-FOLDER_NUM = "2023-07-25_18h12m38s"
+FOLDER_NUM = "2023-07-25_18h18m53s"
 
 EXP_INFO_FILE = os.path.join(FOLDER_UP, "exp-info.csv")
 
