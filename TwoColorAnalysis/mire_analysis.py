@@ -22,7 +22,7 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
         profile = mire_im[:, loc_profile] / max(mire_im[:, loc_profile])
         smooth_prof = superimpose.moving_average(profile, 20)
         diff = smooth_prof[401: 651] - smooth_prof[400 : 650]
-        separators.append(405 + list(diff).index(max(diff)))
+        separators.append(405 + list(diff).index(min(diff)))
     separation = median(separators)
     if visualization:
         plt.figure()
@@ -96,7 +96,7 @@ def mire_analysis(mire_path: str, visualization: bool=True) -> MireInfo:
     return res
 
 if __name__ == "__main__":
-    mire_path = "/Volumes/Chains/2colors0502/2024-05-02_17h43m35s_calib"
-    im = "Image0007164.tif"
+    mire_path = "/Volumes/Chains/2colors0430/2024-04-30_17h12m21s_calib"
+    im = "Image0004725.tif"
     mire_info = mire_analysis(os.path.join(mire_path, im))
     mire_info.save(os.path.join(mire_path, "mire_info.json"))

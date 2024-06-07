@@ -19,8 +19,8 @@ def contrast_enhancement(image: np.ndarray) -> np.ndarray:
             image_enhanced[:, :, i] = contrast_enhancement(image_enhanced[:, :, i])
         return image_enhanced
     elif len(image.shape) == 2:
-        p15, p100 = np.percentile(image, (15, 100))
-        img_rescale = exposure.rescale_intensity(image, in_range=(p15, p100 + 3))
+        p15, p100 = np.percentile(image, (18, 100))
+        img_rescale = exposure.rescale_intensity(image, in_range=(p15, p100))
         return img_rescale
     else:
         raise IndexError("Not the good dimension.")

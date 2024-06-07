@@ -142,8 +142,7 @@ class AngleDetector:
 
     def detect_flagella(self, visualization: bool = False) -> Tuple[float, float, Tuple[float, float]]:
         """Detect the flagella in the red image."""
-        p2, p98 = np.percentile(self.red_im, (2, 98))
-        stretched = exposure.rescale_intensity(self.red_im, in_range=(p2, p98))
+        stretched = superimpose.contrast_enhancement(self.red_im)
         filtered = median_filter(stretched, size=15)
         blur = gaussian(filtered, 2)
 
