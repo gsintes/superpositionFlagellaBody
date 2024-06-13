@@ -270,7 +270,7 @@ def list_angle_detection(
 
 
 if __name__ == "__main__":
-    folder_list = [os.path.join(constants.FOLDER_UP, f) for f in os.listdir(constants.FOLDER_UP) if not f.startswith(".") and os.path.isdir(os.path.join(constants.FOLDER_UP, f))]
+    folder_list = [os.path.join(constants.FOLDER_UP, f) for f in os.listdir(constants.FOLDER_UP) if not f.startswith(".") and os.path.isdir(os.path.join(constants.FOLDER_UP, f)) ]
     for folder in folder_list:
         constants.FOLDER = folder
         exp_info = load_info_exp(constants.EXP_INFO_FILE, constants.FOLDER_NUM)
