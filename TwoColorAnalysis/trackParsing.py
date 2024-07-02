@@ -8,13 +8,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import constants
 from superimpose import MireInfo
 
 
 def parser_track(
-    folder: str = constants.FOLDER,
-    file: str = constants.TRACK_FILE,
+    folder: str ,
     fps: int = 80) -> pd.DataFrame:
     """Parse the data from the track file"""
     exp = r"^\s*\d+\s+(-*\d+.\d+)\s+(-*\d+.\d+)\s+(-*\d+.\d+)\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+-*\d+.\d+\s+(\d+.\d+)\s+(\d+.\d+)"
@@ -24,7 +22,7 @@ def parser_track(
     time = []
     center_x = []
     center_y = []
-    with open(os.path.join(folder, file), "r") as f:
+    with open(os.path.join(folder, "Track/Track.txt"), "r") as f:
         for i, line in enumerate(f):
             expression = re.search(exp, line)
             x.append(float(expression.group(1)))
@@ -73,11 +71,10 @@ def calculate_velocities(data: pd.DataFrame, fps: int) -> pd.DataFrame:
 
 
 def load_track_data(
-    folder: str = constants.FOLDER,
-    file: str = constants.TRACK_FILE,
+    folder: str,
     fps: float = 80) -> pd.DataFrame:
     """Load, parse and calculate velocities from track data."""
-    data = parser_track(folder, file, fps)
+    data = parser_track(folder, fps)
     data = smooth_trajectory(data, 40) #TODO find intelligent way
     return calculate_velocities(data, fps)
 
@@ -86,15 +83,3 @@ def load_info_exp(file:str, exp: str) -> pd.DataFrame:
     info = pd.read_csv(file)
     info_exp = info.loc[info["exp"]==exp]
     return info_exp
-
-if __name__ == "__main__":
-    data = load_track_data()
-
-    data.plot("time", ["vel_x", "vel_y"])
-    # data.plot("time", "x")
-    data.plot("time", "y")
-    folder = constants.FOLDER.split("/")[-1]
-    data.plot("time", ["center_x", "center_y"])
-    # plt.savefig(f"/Users/sintes/Desktop/yTracking/{folder}")
-    data.plot("time", "smooth_y")
-    plt.show(block=True)

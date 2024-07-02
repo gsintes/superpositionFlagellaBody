@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import constants
 from trackParsing import load_track_data
 
 def fourier_transform(signal: List[float]) -> List[float]:
@@ -36,11 +35,11 @@ class Analysis:
         limits: Tuple[int, int],
         fps: int,
         folder: str = "",
-        data_file: str = constants.ANGLE_DATA_FILE,
         angles: List[float]=[],
         times: List[float]=[]
         ) -> None:
         """Load the angle data."""
+        data_file = "angle_body_flagella.csv"
         self.fps = fps
         Analysis.count_data += 1
         self.folder = folder
@@ -217,7 +216,8 @@ def get_limits(lim_lit: str) -> Tuple[int, int]:
 
 
 if __name__ == "__main__":
-    analysis_data = pd.read_csv(os.path.join(constants.FOLDER_UP, "exp-info.csv"))
+    folder_up = ""
+    analysis_data = pd.read_csv(os.path.join(folder_up, "exp-info.csv"))
 
     data_list: List[pd.Series] = []
     for _, info in analysis_data.iterrows():
@@ -229,7 +229,7 @@ if __name__ == "__main__":
             folder = info["exp"]
             fps = info["fps"]
             if len(folder.split("/")) == 1:
-                folder = os.path.join(constants.FOLDER_UP, folder)
+                folder = os.path.join(folder_up, folder)
             for lim in limit_list:
                 if lim != "":
 
@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
     data = pd.DataFrame()
     data = pd.DataFrame(data_list)
-    data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"))
+    data.to_csv(os.path.join(folder_up, "wobbling_data.csv"))
 
     data["Count_freq"] = 1 / data["Period"]
     x = np.linspace(min(data["Fourier_mode"]), max(data["Fourier_mode"]))
@@ -250,19 +250,19 @@ if __name__ == "__main__":
     plt.plot(x, x, "k--")
     plt.xlabel("Fourier frequency (Hz)")
     plt.ylabel("Count frequency (Hz)")
-    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/freq_freq.png")
+    plt.savefig(f"{folder_up}/Wobbling/freq_freq.png")
 
     data.plot("Amplitude", "Mean_angle", "scatter")
     x = np.linspace(min(data["Amplitude"]), max(data["Amplitude"]))
     plt.plot(x, x, "k--")
     plt.plot(x, -x, "k--")
-    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/mean_amplitude.png")
+    plt.savefig(f"{folder_up}/Wobbling/mean_amplitude.png")
 
 
     data.plot("Mean_vel", "Period", "scatter")
-    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/period_vel.png")
+    plt.savefig(f"{folder_up}/Wobbling/period_vel.png")
     data.plot("Mean_vel", "Amplitude", "scatter")
-    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/amplitude_vel.png")
+    plt.savefig(f"{folder_up}/Wobbling/amplitude_vel.png")
     data.plot("Period", "Amplitude", "scatter")
-    plt.savefig(f"{constants.FOLDER_UP}/Wobbling/amplitude_period.png")
+    plt.savefig(f"{folder_up}/Wobbling/amplitude_period.png")
     plt.show(block=True)

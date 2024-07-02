@@ -17,7 +17,6 @@ from skimage.filters.thresholding import threshold_li
 from makeTestIm import Rectangle
 
 import superimpose
-import constants
 from trackParsing import load_track_data, load_info_exp
 import body_detection as bd
 from mire_info import MireInfo
@@ -28,12 +27,13 @@ class NoCenteredParticle(Exception):
         super().__init__(*args)
 
 class Info:
-    def __init__(self, fps: int, mire_info: MireInfo) -> None:
-        self.track_data = load_track_data(fps=fps)
+    def __init__(self, folder: str, fps: int, mire_info: MireInfo) -> None:
+        self.folder = folder
+        self.track_data = load_track_data(self.folder, fps=fps)
         self.mire_info = mire_info
         self.fps = fps
-        self.shift = (mire_info.displacement[0] - (constants.IM_SIZE[1] // 2),
-         - mire_info.middle_line - (constants.IM_SIZE[1] - mire_info.middle_line) // 2)
+        self.shift = (mire_info.displacement[0] - (1024 // 2),
+         - mire_info.middle_line - (1024 - mire_info.middle_line) // 2)
 
 
 def li_binarization(image: np.ndarray) -> np.ndarray:
@@ -111,27 +111,28 @@ class DetectionChecker:
         self.rectangle = rectangle
 
     def __call__(self) -> plt.Figure:
-        _, axis =plt.subplots(1, 3)
+        _, axis =plt.subplots(1)
         x = np.linspace(0, self.image.shape[0])
-        axis[0].set_ylim([self.image.shape[0], 0])
-        axis[0].set_xlim([0, self.image.shape[1]])
-        axis[0].imshow(self.image, cmap="gray")
-        axis[0].plot(self.a * x + self.b, x, "-b", linewidth=1)
+        axis.set_ylim([self.image.shape[0], 0])
+        axis.set_xlim([0, self.image.shape[1]])
+        axis.imshow(self.image, cmap="gray")
+        # axis[0].plot(self.a * x + self.b, x, "-b", linewidth=1)
 
-        axis[1].imshow(self.bin, cmap="gray")
-        axis[1].plot(self.a * x + self.b, x, "-b", linewidth=1)
-        axis[1].set_ylim([self.image.shape[0], 0])
-        axis[1].set_xlim([0, self.image.shape[1]])
+        # axis[1].imshow(self.bin, cmap="gray")
+        # axis[1].plot(self.a * x + self.b, x, "-b", linewidth=1)
+        # axis[1].set_ylim([self.image.shape[0], 0])
+        # axis[1].set_xlim([0, self.image.shape[1]])
 
         if self.rectangle is not None:
             X, Y = self.rectangle.border((200, 200))
-            axis[0].plot(Y, X, ".r", markersize=2)
-            axis[1].plot(Y, X, ".r", markersize=2)
+            axis.plot(Y, X, ".r", markersize=2)
+            # axis[1].plot(Y, X, ".r", markersize=2)
 
 
 class AngleDetector:
     """Does the detection of the angle."""
-    def __init__(self, super_imposed: np.ndarray, i: int, info: Info, visualization: bool) -> None:
+    def __init__(self, fig_folder: str, super_imposed: np.ndarray, i: int, info: Info, visualization: bool) -> None:
+        self.fig_folder = fig_folder
         self.super_imposed = super_imposed
         self.i = i
         self.visualization = visualization
@@ -178,8 +179,8 @@ class AngleDetector:
     def __call__(self) -> float    :
         """Detect the angle between the body and the flagella, and the body and velocity."""
         try:
-            a0, b0, vect_body = self.detect_body(visualization=False)
-            a1, b1, vect_flagella = self.detect_flagella(visualization=True)
+            a0, b0, vect_body = self.detect_body(visualization=True)
+            a1, b1, vect_flagella = self.detect_flagella(visualization=False)
         except NoCenteredParticle:
             raise
         x = np.linspace(0, self.super_imposed.shape[0])
@@ -198,25 +199,25 @@ class AngleDetector:
         else:
             angle_vb = 0
 
-        if self.visualization:
-            super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
-            if angle_vb != 0:
-                plt.quiver(100, 100, self.vel[0], self.vel[1], scale=10)
-            plt.imshow(super_imposed_en)
-            plt.plot(a0 * x + b0, x, "-g", linewidth=1)
-            plt.plot(a1 * x + b1, x, "-r", linewidth=1)
+        # if self.visualization:
+        #     super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
+        #     if angle_vb != 0:
+        #         plt.quiver(100, 100, self.vel[0], self.vel[1], scale=10)
+        #     plt.imshow(super_imposed_en)
+        #     plt.plot(a0 * x + b0, x, "-g", linewidth=1)
+        #     plt.plot(a1 * x + b1, x, "-r", linewidth=1)
 
-            plt.ylim([self.super_imposed.shape[0], 0])
-            plt.xlim([0, self.super_imposed.shape[1]])
-            # plt.draw()
-            # plt.pause(0.001)
-            plt.savefig(os.path.join(constants.FIG_FOLDER, f"{self.i}.png"))
-            # plt.clf()
-            plt.close("all")
+        #     plt.ylim([self.super_imposed.shape[0], 0])
+        #     plt.xlim([0, self.super_imposed.shape[1]])
+        #     # plt.draw()
+        #     # plt.pause(0.001)
+        plt.savefig(os.path.join(self.fig_folder, f"{self.i}.png"))
+        #     # plt.clf()
+        plt.close("all")
         return angle_fb, angle_vb
 
 
-def save_data(angles: List[Tuple[float, float]], folder=constants.FOLDER) -> None:
+def save_data(angles: List[Tuple[float, float]], folder) -> None:
     """Save the data to a text file."""
     textfile = open(os.path.join(folder, "angle_body_flagella.csv"), "w")
     textfile.write("Time, FlagellaBody angle, VelocityBody angle\n")
@@ -239,7 +240,7 @@ def get_center_body(super_imposed: np.ndarray, center_track: Tuple[int, int]):
     # plt.show(block=True)
     return centroid
 
-def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
+def analyse_image(fig_folder: str, i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
     """Run the analysis on an image."""
     im_test = mpim.imread(image_path)
     im_test = im_test / 2 ** 16
@@ -252,41 +253,48 @@ def analyse_image(i: int, image_path: str, info: Info, visualization: bool) -> T
             center=center,
             size=100)
     try:
-        detect_angle = AngleDetector(super_imposed, i, info, visualization)
+        detect_angle = AngleDetector(fig_folder, super_imposed, i, info, visualization)
         angles = detect_angle()
         return (i / info.fps, 180 * angles[0] / np.pi, 180 * angles[1] / np.pi)
     except NoCenteredParticle:
         return (0, 0)
 
-def list_angle_detection(
+def list_angle_detection(folder_up: str, folder: str,
     image_list: List[str], fps: int,
     visualization: bool = False) -> Tuple[List[float], List[float]]:
     """Run the angle detection on a list of path and return angle and time."""
-    info = Info(fps, mire_info)
+    fig_folder = os.path.join(folder_up, "Wobbling", folder)
+    info = Info(os.path.join(folder_up, folder), fps, mire_info)
     pool = mp.Pool(mp.cpu_count() - 1)
-    angles = pool.starmap_async(analyse_image, [(i, image_path, info, visualization) for i, image_path in enumerate(image_list[:len(info.track_data)])]).get()
+    angles = pool.starmap_async(analyse_image, [(fig_folder, i, image_path, info, visualization) for i, image_path in enumerate(image_list[:len(info.track_data)])]).get()
     pool.close()
     return angles
 
 
 if __name__ == "__main__":
-    folder_list = [os.path.join(constants.FOLDER_UP, f) for f in os.listdir(constants.FOLDER_UP) if not f.startswith(".") and os.path.isdir(os.path.join(constants.FOLDER_UP, f)) ]
+
+    folder_up = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-07-25"
+    mire_info_path = f"{folder_up}/2023-07-25_18h06m22s_calib/mire_info.json"
+    exp_info_file = os.path.join(folder_up, "exp-info.csv")
+    folder_list = [f for f in os.listdir(folder_up) if not f.startswith(".") and os.path.isdir(os.path.join(folder_up, f)) ]
     for folder in folder_list:
-        constants.FOLDER = folder
-        exp_info = load_info_exp(constants.EXP_INFO_FILE, constants.FOLDER_NUM)
+        full_folder = os.path.join(folder_up, folder)
+        fig_folder = os.path.join(folder_up, "Wobbling", folder)
+        print(folder)
+        exp_info = load_info_exp(exp_info_file, folder)
         fps = int(exp_info["fps"].values[0])
         visualization = True
         if visualization:
             try:
-                os.makedirs(constants.FIG_FOLDER)
+                os.makedirs(fig_folder)
             except FileExistsError:
                 pass
-        mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
+        mire_info = superimpose.MireInfo(mire_info_path)
 
         end = int(exp_info["final_flagella_frame"].values[0])
+        print(end)
 
-        # end = 10
-        image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))][0:end]
+        image_list = [os.path.join(full_folder, f) for f in os.listdir(full_folder) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
-        angles = list_angle_detection(image_list, fps=fps,visualization=visualization)
-        save_data(angles, constants.FOLDER)
+        angles = list_angle_detection(folder_up, folder, image_list, fps=fps,visualization=visualization)
+        save_data(angles, full_folder)

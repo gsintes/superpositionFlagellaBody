@@ -130,4 +130,3 @@ if __name__ == "__main__":
     list_dir = [f for f in os.listdir(parent_folder) if not("calib" in f) and f.startswith("202") and os.path.isdir(os.path.join(parent_folder, f))]
     for folder in list_dir:
         folder_superposition(os.path.join(parent_folder, folder), parent_folder, mire_info)
-    # folder_superposition(constants.FOLDER, "/Volumes/Chains/Tracking_23-12-08/superimposed", mire_info)

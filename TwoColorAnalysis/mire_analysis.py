@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpim
 from scipy.signal import correlate2d
 
-import constants
 import superimpose
 from mire_info import MireInfo
 
+IM_SIZE = (1024, 1024)
 
 def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
     """Open the mire image and find the separation line."""
-    loc_profiles = range(10, constants.IM_SIZE[0] - 10, 10)
+    loc_profiles = range(10, IM_SIZE[0] - 10, 10)
     separators = []
     for loc_profile in loc_profiles:
         profile = mire_im[:, loc_profile] / max(mire_im[:, loc_profile])
@@ -32,8 +32,8 @@ def find_separation(mire_im: np.ndarray, visualization: bool=False) -> int:
 
         plt.figure()
         plt.imshow(mire_im, cmap="gray")
-        plt.plot([0, constants.IM_SIZE[0]], [separation, separation], "-r")
-        plt.xlim([0, constants.IM_SIZE[0]])
+        plt.plot([0, IM_SIZE[0]], [separation, separation], "-r")
+        plt.xlim([0, IM_SIZE[0]])
     return int(separation)
 
 

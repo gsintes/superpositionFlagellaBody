@@ -16,13 +16,15 @@ def vel_model(fluidity: Union[float, np.ndarray], T0: float, Omega_max: float, v
         return np.array([vel_model(f, T0, Omega_max, visc_thresh) for f in fluidity])
     a = 1.5
     b = 0.6
-    Omega_c = 3 * T0  / (16 * np.pi * a * b ** 2 * visc_thresh)
+    d = 16 * np.pi * a * b ** 2 / 5
+    Omega_c = 3 * T0  / (d * visc_thresh)
     alpha = T0 / (Omega_max - Omega_c)
     visc = 1 / fluidity
-    v_0 = 3 * alpha * Omega_max / (16 * np.pi * a * b ** 2 + 3 * alpha)
+    v_0 = 3 * alpha * Omega_max / (d + 3 * alpha)
+
     if visc > visc_thresh:
-        return 3 * T0 * fluidity / (16 * np.pi * a * b ** 2) / v_0
-    return 3 * alpha * Omega_max * fluidity / ((16 * np.pi * a * b ** 2 + 3 * alpha * fluidity)) /v_0
+        return 3 * T0 * fluidity / (d * v_0)
+    return 3 * alpha * Omega_max * fluidity / (v_0 * (d + 3 * alpha * fluidity))
 
 def get_v_ref(data: pd.DataFrame) -> Dict[str, float]:
     """Get the velocity at reference viscosity for each date."""
@@ -43,9 +45,7 @@ if __name__=="__main__":
     data["fluidity"] = 1 / data["r_viscosity"]
     data["date"] = data.exp.apply(lambda x: x.split("_")[0])
     v_ref = get_v_ref(data)
-
     data["vel_norm"] = data.vel / np.array([v_ref[date] for date in data.date])
-    # data["vel_norm"] = data["vel"] / v_ref
 
     my_f = data.fluidity.unique()
     my_v = []
@@ -63,34 +63,37 @@ if __name__=="__main__":
     y_data = np.concatenate((y_data, marti.vel_breuer))
     y_data = np.concatenate((y_data, my_v))
 
-    popt, pcov = curve_fit(vel_model, x_data, y_data, p0=[1, 1000, 5], bounds=([0, 0, 1], [np.inf, np.inf, 30]))
+
+    popt, pcov = curve_fit(vel_model, x_data, y_data, p0=[1500, 120, 5], bounds=([1000, 40, 1], [2000, 200, 12]))
     print(popt)
 
-    plt.figure(figsize=(10, 6))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15.9, 6))
+    x = np.linspace(0.01, 1, 200)
 
-    plt.plot(1 / marti.f_pvp360, marti.vel_pvp360, "g*", label="Martinez PVP360")
-    plt.plot(1 / marti.f_pvp60, marti.vel_pvp60, "m*", label="Martinez PVP60")
-    plt.plot(marti.vis_breuer, marti.vel_breuer, "b*", label="Breuer Ficoll")
-    sns.pointplot(x="r_viscosity", y="vel_norm", data=data, native_scale=True, linestyles="", errorbar="se", scale=0.9, err_kws={'linewidth': 1.5}, c="k")
-    sns.scatterplot(x="r_viscosity", y="vel_norm", data=data, label="PVP 360", s=5, c="k")
+    ax1.plot(1 / marti.f_pvp360, marti.vel_pvp360, "g*", label="Martinez PVP360")
+    ax1.plot(1 / marti.f_pvp60, marti.vel_pvp60, "m*", label="Martinez PVP60")
+    ax1.plot(marti.vis_breuer, marti.vel_breuer, "b*", label="Breuer Ficoll")
+    sns.pointplot(x="r_viscosity", y="vel_norm", data=data, native_scale=True, linestyles="", errorbar="se", scale=0.9, err_kws={'linewidth': 1.5}, c="k", ax=ax1)
+    sns.scatterplot(x="r_viscosity", y="vel_norm", data=data, label="PVP 360", s=5, c="k", ax=ax1)
+    ax1.plot(1 / x, vel_model(x, *popt), "k--", label="Model")
 
-    plt.legend()
+    # plt.legend()
+    ax1.set_xlabel("$\eta / \eta_0$")
+    ax1.set_ylabel("$V / V_0$")
+
+
+
+    plt.plot(marti.f_pvp360, marti.vel_pvp360, "g*")
+    plt.plot(marti.f_pvp60, marti.vel_pvp60, "m*")
+    plt.plot(1 / marti.vis_breuer, marti.vel_breuer, "b*")
+    sns.pointplot(x="fluidity", y="vel_norm", data=data, native_scale=True, linestyles="", errorbar="se", scale=0.9, err_kws={'linewidth': 1.5}, c="k")
+    sns.scatterplot(x="fluidity", y="vel_norm", data=data, s=5, c="k")
+    plt.plot(x, vel_model(x, *popt), "k--")
+
+    ax1.legend()
     plt.xlabel("$\eta_0 / \eta$")
     plt.ylabel("$V / V_0$")
 
-    plt.figure(figsize=(10, 6))
-    x = np.linspace(0.01, 1, 100)
-    plt.plot(x, vel_model(x, *popt), "r-", label="Model")
-    plt.plot(marti.f_pvp360, marti.vel_pvp360, "g*", label="Martinez PVP360")
-    plt.plot(marti.f_pvp60, marti.vel_pvp60, "m*", label="Martinez PVP60")
-    plt.plot(1 / marti.vis_breuer, marti.vel_breuer, "b*", label="Breuer Ficoll")
-    sns.pointplot(x="fluidity", y="vel_norm", data=data, native_scale=True, linestyles="", errorbar="se", scale=0.9, err_kws={'linewidth': 1.5}, c="k")
-    sns.scatterplot(x="fluidity", y="vel_norm", data=data, label="PVP 360", s=5, c="k")
-
-    plt.legend()
-    plt.xlabel("$\eta / \eta_0$")
-    plt.ylabel("$V / V_0$")
-
-    # plt.show(block=True)
+    plt.show(block=True)
 
 

@@ -6,7 +6,7 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import constants
+FPS = 80
 class EmptyDataException(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
@@ -24,14 +24,15 @@ def select_region(folder: str) -> Tuple[int, int]:
         plt.xlabel("Time (in s)")
         plt.ylabel("Angle (in degrees)")
         coord = plt.ginput(2)
-        index_0 = round((coord[0][0] - min(time)) * constants.FPS)
-        index_1 = round((coord[1][0] - min(time)) * constants.FPS)
+        index_0 = round((coord[0][0] - min(time)) * FPS)
+        index_1 = round((coord[1][0] - min(time)) * FPS)
         plt.close()
         return index_0, index_1
     raise EmptyDataException
 
 if __name__ == "__main__":
-    list_dir = [os.path.join(constants.FOLDER_UP, f) for f in os.listdir(constants.FOLDER_UP) if not (f.startswith(".") or f.endswith(".csv"))]
+    folder_up = ""
+    list_dir = [os.path.join(folder_up, f) for f in os.listdir(folder_up) if not (f.startswith(".") or f.endswith(".csv"))]
     folders: List[str] = []
     limits: List[Tuple[int, int]] = []
     for folder in list_dir:
@@ -63,4 +64,4 @@ if __name__ == "__main__":
     data = pd.DataFrame()
     data["Folder"] = folders
     data["Limits"] = limits
-    data.to_csv(os.path.join(constants.FOLDER_UP, "wobbling_data.csv"), index=False)
+    data.to_csv(os.path.join(folder_up, "wobbling_data.csv"), index=False)
