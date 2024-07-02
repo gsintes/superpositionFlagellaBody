@@ -13,10 +13,10 @@ from scipy.ndimage import median_filter
 import cv2
 
 from skimage.filters import gaussian
-from skimage.filters.thresholding import threshold_li
 from makeTestIm import Rectangle
 
 import superimpose
+import utils
 from trackParsing import load_track_data, load_info_exp
 import body_detection as bd
 from mire_info import MireInfo
@@ -34,12 +34,6 @@ class Info:
         self.fps = fps
         self.shift = (mire_info.displacement[0] - (1024 // 2),
          - mire_info.middle_line - (1024 - mire_info.middle_line) // 2)
-
-
-def li_binarization(image: np.ndarray) -> np.ndarray:
-    """Binarize the image using the li algorithm."""
-    t = threshold_li(image)
-    return 1 * (image > t)
 
 
 def pca(x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -150,7 +144,7 @@ class AngleDetector:
 
         cv2.imwrite(f"/Users/sintes/Desktop/Flagella/{self.i}.png", (blur * 0.99 * 2 ** 8 / np.amax(blur)).astype("uint8"))
 
-        bin_red = li_binarization(blur)
+        bin_red = utils.li_binarization(blur)
         bin_red = morphology.binary_closing(bin_red, footprint=np.ones((9, 9)))
         x, y, _ = keep_bigger_particle(bin_red, center=False)
         bin_red = make_bin_im(x, y, bin_red.shape)
@@ -230,7 +224,7 @@ def get_center_body(super_imposed: np.ndarray, center_track: Tuple[int, int]):
     green_im = super_imposed[:, :, 1]
     # center_im = (green_im.shape[0] // 2, green_im.shape[1] // 2)
     green_im_centered = superimpose.select_center_image(green_im, center_track, size=200)
-    bin_im = li_binarization(green_im_centered)
+    bin_im = utils.li_binarization(green_im_centered)
     _, _, centroid = keep_bigger_particle(bin_im, center=False)
     centroid = (center_track[0] + int(centroid[0]) - 200, center_track[1] + int(centroid[1]) - 200)
     # plt.figure()

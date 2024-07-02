@@ -1,14 +1,16 @@
 """Detect the body using convolution techniques."""
 
 from typing import Tuple, List
+import os
 
 import numpy as np
+import matplotlib.image as mpim
 from matplotlib import pyplot as plt
 
-from utils import timeit
 from makeTestIm import Mask, Rectangle
 
-import angleBodyFlagella as abf
+import superimpose
+import utils
 
 def center_of_mass(image: np.ndarray) -> Tuple[int, int]:
     """Return the center of mass of an image weighted by pixel intensity."""
@@ -68,7 +70,7 @@ class BodyDetection:
         sum = np.zeros(self.image.shape)
         for conv in convolutions:
             sum += conv
-        bin_sum = abf.li_binarization(sum)
+        bin_sum = utils.li_binarization(sum)
         self.center = center_of_mass(bin_sum)
         self.best_angle = 0
         max = 0
@@ -100,25 +102,27 @@ class BodyDetection:
         return Rectangle(self.a, self.b, self.center, np.pi * self.best_angle / 180)
 
 if __name__ == "__main__":
-    # mire_info = superimpose.MireInfo(constants.MIRE_INFO_PATH)
+    mire_info_path = ""
+    folder = ""
+    mire_info = superimpose.MireInfo(mire_info_path)
 
-    # image_list = [os.path.join(constants.FOLDER, f) for f in os.listdir(constants.FOLDER) if (f.endswith(".tif") and not f.startswith("."))]
-    # image = mpim.imread(image_list[1300])
-    # super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
-    # super_imposed = superimpose.select_center_image(super_imposed, 100)
-    # image = super_imposed[:, :, 1]
+    image_list = [os.path.join(folder , f) for f in os.listdir(folder) if (f.endswith(".tif") and not f.startswith("."))]
+    image = mpim.imread(image_list[1300])
+    super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
+    super_imposed = superimpose.select_center_image(super_imposed, 100)
+    image = super_imposed[:, :, 1]
 
-    # bd = BodyDetection(image, 40, 7)
-    # bd(visualization=True)
+    bd = BodyDetection(image, 40, 7)
+    bd(visualization=True)
 
-    res = []
-    for angle in range(0, 180):
-        print(angle)
-        IMAGE = Rectangle(length=40, width=7, center=(50, 70), angle=angle * np.pi / 180).make_im((200, 200))
+    # res = []
+    # for angle in range(0, 180):
+    #     print(angle)
+    #     IMAGE = Rectangle(length=40, width=7, center=(50, 70), angle=angle * np.pi / 180).make_im((200, 200))
 
-        bd = BodyDetection(IMAGE, 40, 6)
-        res.append(int(bd(visualization=False).angle * 180 / np.pi))
-    delta = np.array([res[i] - i for i in range(0, 180)])
-    print(res)
-    print(delta)
-    print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
+    #     bd = BodyDetection(IMAGE, 40, 6)
+    #     res.append(int(bd(visualization=False).angle * 180 / np.pi))
+    # delta = np.array([res[i] - i for i in range(0, 180)])
+    # print(res)
+    # print(delta)
+    # print(np.mean(delta), np.sqrt(np.mean(delta ** 2)))
