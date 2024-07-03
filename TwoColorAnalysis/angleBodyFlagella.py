@@ -97,25 +97,42 @@ def find_main_axis(x: np.ndarray, y: np.ndarray) -> Tuple[float, float, Tuple[fl
 
 class DetectionChecker:
     """Does the image for checking axis detection."""
-    def __init__(self, image: np.ndarray, bin: np.ndarray, a: float, b: float, rectangle: Rectangle=None) -> None:
+    def __init__(self, image: np.ndarray, streched: np.ndarray, bin: np.ndarray, a: float, b: float, rectangle: Rectangle=None) -> None:
         self.image = image
+        self.streched = streched
         self.a = a
         self.b = b
         self.bin = bin
         self.rectangle = rectangle
 
     def __call__(self) -> plt.Figure:
-        _, axis =plt.subplots(1)
+        _, axis =plt.subplots(1, 3)
         x = np.linspace(0, self.image.shape[0])
-        axis.set_ylim([self.image.shape[0], 0])
-        axis.set_xlim([0, self.image.shape[1]])
-        axis.imshow(self.image, cmap="gray")
-        # axis[0].plot(self.a * x + self.b, x, "-b", linewidth=1)
+        axis[0].set_ylim([self.image.shape[0], 0])
+        axis[0].set_xlim([0, self.image.shape[1]])
+        axis[0].imshow(self.image, cmap="gray")
+        axis[0].plot(self.a * x + self.b, x, "-b", linewidth=1)
+        axis[0].set_xticks([])
+        axis[0].set_yticks([])
+        axis[0].set_title("Original")
 
-        # axis[1].imshow(self.bin, cmap="gray")
-        # axis[1].plot(self.a * x + self.b, x, "-b", linewidth=1)
-        # axis[1].set_ylim([self.image.shape[0], 0])
-        # axis[1].set_xlim([0, self.image.shape[1]])
+        axis[1].imshow(self.streched, cmap="gray")
+        axis[1].plot(self.a * x + self.b, x, "-b", linewidth=1)
+        axis[1].set_ylim([self.image.shape[0], 0])
+        axis[1].set_xlim([0, self.image.shape[1]])
+        axis[1].set_xticks([])
+        axis[1].set_yticks([])
+        axis[1].set_title("Contrast enhanced")
+
+        axis[2].imshow(self.bin, cmap="gray")
+        axis[2].plot(self.a * x + self.b, x, "-b", linewidth=1)
+        axis[2].set_ylim([self.image.shape[0], 0])
+        axis[2].set_xlim([0, self.image.shape[1]])
+        axis[2].set_xticks([])
+        axis[2].set_yticks([])
+        axis[2].set_title("Binarized")
+
+
 
         if self.rectangle is not None:
             X, Y = self.rectangle.border((200, 200))
@@ -151,7 +168,7 @@ class AngleDetector:
 
         a, b, vect = find_main_axis(x, y)
         if visualization:
-            checker = DetectionChecker(self.red_im, bin_red, a, b)
+            checker = DetectionChecker(self.red_im, stretched, bin_red, a, b)
             checker()
         return a, b, vect
 
@@ -168,12 +185,12 @@ class AngleDetector:
         if visualization:
             checker = DetectionChecker(self.green_im, bin_green, a, b, rectangle=rectangle)
             checker()
-        return a, b, vect
+        return a, b, vect, rectangle
 
     def __call__(self) -> float    :
         """Detect the angle between the body and the flagella, and the body and velocity."""
         try:
-            a0, b0, vect_body = self.detect_body(visualization=True)
+            a0, b0, vect_body, rect = self.detect_body(visualization=False)
             a1, b1, vect_flagella = self.detect_flagella(visualization=False)
         except NoCenteredParticle:
             raise
@@ -193,21 +210,26 @@ class AngleDetector:
         else:
             angle_vb = 0
 
-        # if self.visualization:
-        #     super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
-        #     if angle_vb != 0:
-        #         plt.quiver(100, 100, self.vel[0], self.vel[1], scale=10)
-        #     plt.imshow(super_imposed_en)
-        #     plt.plot(a0 * x + b0, x, "-g", linewidth=1)
-        #     plt.plot(a1 * x + b1, x, "-r", linewidth=1)
+        if self.visualization:
+            plt.figure()
+            super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
+            # if angle_vb != 0:
+            #     plt.quiver(100, 100, self.vel[0], self.vel[1], scale=10)
+            plt.imshow(super_imposed_en)
+            # plt.plot(a0 * x + b0, x, "-g", linewidth=1)
+            plt.plot(a1 * x + b1, x, "-b", linewidth=1)
+            X, Y = rect.border((200, 200))
+            plt.plot(Y, X, ".r", markersize=2)
 
-        #     plt.ylim([self.super_imposed.shape[0], 0])
-        #     plt.xlim([0, self.super_imposed.shape[1]])
-        #     # plt.draw()
-        #     # plt.pause(0.001)
-        plt.savefig(os.path.join(self.fig_folder, f"{self.i}.png"))
+            plt.ylim([self.super_imposed.shape[0], 0])
+            plt.xlim([0, self.super_imposed.shape[1]])
+            # plt.draw()
+            # plt.pause(0.001)
+            plt.xticks([])
+            plt.yticks([])
+            plt.savefig(os.path.join(self.fig_folder, f"{self.i}.png"))
         #     # plt.clf()
-        plt.close("all")
+            plt.close("all")
         return angle_fb, angle_vb
 
 
@@ -267,14 +289,13 @@ def list_angle_detection(folder_up: str, folder: str,
 
 if __name__ == "__main__":
 
-    folder_up = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-07-25"
+    folder_up = "/home/guillaume/NAS/SwimmingPVP360/SwimmingPVP_23-07-25"
     mire_info_path = f"{folder_up}/2023-07-25_18h06m22s_calib/mire_info.json"
     exp_info_file = os.path.join(folder_up, "exp-info.csv")
     folder_list = [f for f in os.listdir(folder_up) if not f.startswith(".") and os.path.isdir(os.path.join(folder_up, f)) ]
     for folder in folder_list:
         full_folder = os.path.join(folder_up, folder)
         fig_folder = os.path.join(folder_up, "Wobbling", folder)
-        print(folder)
         exp_info = load_info_exp(exp_info_file, folder)
         fps = int(exp_info["fps"].values[0])
         visualization = True
@@ -283,10 +304,9 @@ if __name__ == "__main__":
                 os.makedirs(fig_folder)
             except FileExistsError:
                 pass
-        mire_info = mire_info.MireInfo(mire_info_path)
+        mire_info = MireInfo(mire_info_path)
 
         end = int(exp_info["final_flagella_frame"].values[0])
-        print(end)
 
         image_list = [os.path.join(full_folder, f) for f in os.listdir(full_folder) if (f.endswith(".tif") and not f.startswith("."))][0:end]
 
