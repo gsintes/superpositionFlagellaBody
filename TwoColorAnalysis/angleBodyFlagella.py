@@ -283,7 +283,7 @@ if __name__ == "__main__":
                 os.makedirs(fig_folder)
             except FileExistsError:
                 pass
-        mire_info = superimpose.MireInfo(mire_info_path)
+        mire_info = mire_info.MireInfo(mire_info_path)
 
         end = int(exp_info["final_flagella_frame"].values[0])
         print(end)

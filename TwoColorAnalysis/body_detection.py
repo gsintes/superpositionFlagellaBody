@@ -10,7 +10,9 @@ from matplotlib import pyplot as plt
 from makeTestIm import Mask, Rectangle
 
 import superimpose
+import mire_info
 import utils
+import angleBodyFlagella as abf
 
 def center_of_mass(image: np.ndarray) -> Tuple[int, int]:
     """Return the center of mass of an image weighted by pixel intensity."""
@@ -47,6 +49,7 @@ class Convoluter:
                 conv_shift[(x + self.mask.center[0]) % conv.shape[0], (y + self.mask.center[1]) % conv.shape[1]] = conv[x, y]
         if visualization:
             plt.figure()
+            plt.title(np.floor(180 * self.mask.angle / np.pi))
             plt.imshow(conv_shift.transpose())
         return conv_shift
 
@@ -65,7 +68,7 @@ class BodyDetection:
         while self.angle < lim:
             convoluter = Convoluter(self.image, Rectangle(self.a, self.b, (0, 0), self.angle * np.pi / 180))
             angles.append(self.angle)
-            convolutions.append(convoluter())
+            convolutions.append(convoluter(visualization=visualization))
             self.angle += step
         sum = np.zeros(self.image.shape)
         for conv in convolutions:
@@ -82,15 +85,15 @@ class BodyDetection:
 
         if visualization:
             plt.figure()
+            plt.title("Sum of convolutions")
             plt.imshow(sum.transpose())
-            plt.plot(self.center[0], self.center[1], "ro", markersize=2)
+            plt.plot(self.center[0], self.center[1], "ko", markersize=3)
 
     def __call__(self, visualization=False) -> Mask:
         """Does a detection of the body with rough then precise angle detection."""
         self.detection()
-        self.angle = self.best_angle - 10
-        self.detection(step=1, lim=self.best_angle + 10)
-
+        self.angle = self.best_angle - 5
+        self.detection(step=1, lim=self.best_angle + 5, visualization=False)
         if visualization:
             rectangle = Rectangle(self.a, self.b, self.center, np.pi * self.best_angle / 180)
             X, Y = rectangle.border(self.image.shape)
@@ -102,14 +105,23 @@ class BodyDetection:
         return Rectangle(self.a, self.b, self.center, np.pi * self.best_angle / 180)
 
 if __name__ == "__main__":
-    mire_info_path = ""
-    folder = ""
-    mire_info = superimpose.MireInfo(mire_info_path)
+    folder_up = "/Users/sintes/Desktop/NASGuillaume/SwimmingPVP360/SwimmingPVP_23-07-25"
+    mire_info_path = f"{folder_up}/2023-07-25_18h06m22s_calib/mire_info.json"
+    folder = os.path.join(folder_up, "2023-07-25_18h35m40s")
+    mire = mire_info.MireInfo(mire_info_path)
 
     image_list = [os.path.join(folder , f) for f in os.listdir(folder) if (f.endswith(".tif") and not f.startswith("."))]
-    image = mpim.imread(image_list[1300])
-    super_imposed = superimpose.shift_image(superimpose.superposition(image, mire_info),(0, 0))
-    super_imposed = superimpose.select_center_image(super_imposed, 100)
+    i = 1757
+    im_test = mpim.imread(image_list[i])
+    info = abf.Info((folder), 80, mire)
+    super_imposed = superimpose.superposition(im_test, info.mire_info)
+    center_track = (int(info.track_data["center_x"][i]) - info.mire_info.middle_line, int(info.track_data["center_y"][i]))
+    center = abf.get_center_body(super_imposed, center_track)
+    # print(center)
+    super_imposed = superimpose.select_center_image(
+            super_imposed,
+            center=center,
+            size=100)
     image = super_imposed[:, :, 1]
 
     bd = BodyDetection(image, 40, 7)
