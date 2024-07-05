@@ -187,30 +187,31 @@ class AngleDetector:
             checker()
         return a, b, vect, rectangle
 
-    def __call__(self) -> float    :
+    def __call__(self) -> Tuple[float, float, float, float, float, float]:
         """Detect the angle between the body and the flagella, and the body and velocity."""
         try:
             a0, b0, vect_body, rect = self.detect_body(visualization=False)
             a1, b1, vect_flagella = self.detect_flagella(visualization=False)
         except NoCenteredParticle:
             raise
-        x = np.linspace(0, self.super_imposed.shape[0])
 
-        ps_fb = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
-        sin_theta_fb = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
-        angle_fb = np.sign(sin_theta_fb) * np.arccos(ps_fb)
-        if not(math.isnan(self.vel[0]) or math.isnan(self.vel[1])):
-            vel_norm =  np.sqrt(self.vel[0] ** 2 + self.vel[1] ** 2)
-            if vel_norm != 0:
-                ps_vb = (vect_body[0] * self.vel[0] + vect_body[1] * self.vel[1]) / vel_norm
-                sin_theta_vb = (- vect_body[0] * self.vel[1] + vect_body[1] * self.vel[0]) / vel_norm
-                angle_vb = np.sign(sin_theta_vb) * np.arccos(ps_vb)
-            else:
-                angle_vb = 0
-        else:
-            angle_vb = 0
+
+        # ps_fb = vect_body[0] * vect_flagella[0] + vect_body[1] * vect_flagella[1]
+        # sin_theta_fb = - vect_body[0] * vect_flagella[1] + vect_body[1] * vect_flagella[0]
+        # angle_fb = np.sign(sin_theta_fb) * np.arccos(ps_fb)
+        # if not(math.isnan(self.vel[0]) or math.isnan(self.vel[1])):
+        #     vel_norm =  np.sqrt(self.vel[0] ** 2 + self.vel[1] ** 2)
+        #     if vel_norm != 0:
+        #         ps_vb = (vect_body[0] * self.vel[0] + vect_body[1] * self.vel[1]) / vel_norm
+        #         sin_theta_vb = (- vect_body[0] * self.vel[1] + vect_body[1] * self.vel[0]) / vel_norm
+        #         angle_vb = np.sign(sin_theta_vb) * np.arccos(ps_vb)
+        #     else:
+        #         angle_vb = 0
+        # else:
+        #     angle_vb = 0
 
         if self.visualization:
+            x = np.linspace(0, self.super_imposed.shape[0])
             plt.figure()
             super_imposed_en = superimpose.contrast_enhancement(self.super_imposed)
             # if angle_vb != 0:
@@ -230,15 +231,15 @@ class AngleDetector:
             plt.savefig(os.path.join(self.fig_folder, f"{self.i}.png"))
         #     # plt.clf()
             plt.close("all")
-        return angle_fb, angle_vb
+        return (vect_body[0], vect_body[1], vect_flagella[0], vect_flagella[1], self.vel[0], self.vel[1])
 
 
-def save_data(angles: List[Tuple[float, float]], folder) -> None:
+def save_data(angles: List[Tuple[float, float, float, float, float, float, float]], folder) -> None:
     """Save the data to a text file."""
     textfile = open(os.path.join(folder, "angle_body_flagella.csv"), "w")
-    textfile.write("Time, FlagellaBody angle, VelocityBody angle\n")
+    textfile.write("time, bodyAxis_x, bodyAxis_y, flagellaAxis_x, flagella_Axis_y, vel_x, vel_y\n")
     for i in range(len(angles)):
-        textfile.write(f"{angles[i][0]}, {angles[i][1]}, {angles[i][2]}\n")
+        textfile.write(f"{angles[i][0]}, {angles[i][1]}, {angles[i][2]}, {angles[i][3]}, {angles[i][4]}, {angles[i][5]}, {angles[i][6]}\n")
     textfile.close()
 
 def get_center_body(super_imposed: np.ndarray, center_track: Tuple[int, int]):
@@ -256,7 +257,7 @@ def get_center_body(super_imposed: np.ndarray, center_track: Tuple[int, int]):
     # plt.show(block=True)
     return centroid
 
-def analyse_image(fig_folder: str, i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float]:
+def analyse_image(fig_folder: str, i: int, image_path: str, info: Info, visualization: bool) -> Tuple[float, float, float, float, float, float, float]:
     """Run the analysis on an image."""
     im_test = mpim.imread(image_path)
     im_test = im_test / 2 ** 16
@@ -271,9 +272,9 @@ def analyse_image(fig_folder: str, i: int, image_path: str, info: Info, visualiz
     try:
         detect_angle = AngleDetector(fig_folder, super_imposed, i, info, visualization)
         angles = detect_angle()
-        return (i / info.fps, 180 * angles[0] / np.pi, 180 * angles[1] / np.pi)
+        return (i / info.fps, *angles)
     except NoCenteredParticle:
-        return (0, 0)
+        return (0, 0, 0, 0, 0, 0, 0)
 
 def list_angle_detection(folder_up: str, folder: str,
     image_list: List[str], fps: int,
@@ -294,6 +295,7 @@ if __name__ == "__main__":
     exp_info_file = os.path.join(folder_up, "exp-info.csv")
     folder_list = [f for f in os.listdir(folder_up) if not f.startswith(".") and os.path.isdir(os.path.join(folder_up, f)) ]
     for folder in folder_list:
+        print(folder)
         full_folder = os.path.join(folder_up, folder)
         fig_folder = os.path.join(folder_up, "Wobbling", folder)
         exp_info = load_info_exp(exp_info_file, folder)
