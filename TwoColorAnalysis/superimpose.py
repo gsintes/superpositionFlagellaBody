@@ -50,7 +50,7 @@ def split_image(
     separation: int) -> Tuple[np.ndarray, np.ndarray]:
     """Split the image at the separation and return the two images at the size of the smaller."""
     diff_sep = 2 * (separation - image.shape[0] // 2)
-    if diff_sep > 0:
+    if diff_sep >= 0:
         top_im = image[diff_sep:separation, :]
         bottom_im = image[separation:, :]
     if diff_sep < 0:
@@ -67,7 +67,8 @@ def shift_image(
     assert len(top_image.shape) == 2
     delta_x = displacement[0]
     delta_y = displacement[1]
-    if delta_x > 0:
+
+    if delta_x >= 0:
         bottom_image = bottom_image[delta_x:, :]
         top_image = top_image[:-delta_x, :]
     if delta_x < 0:
@@ -77,7 +78,7 @@ def shift_image(
     if delta_y < 0:
         bottom_image = bottom_image[:, :delta_y]
         top_image = top_image[:, -delta_y:]
-    if delta_y > 0:
+    if delta_y >= 0:
         bottom_image = bottom_image[:, delta_y:]
         top_image = top_image[:, delta_y:]
     return bottom_image, top_image

@@ -290,10 +290,10 @@ def list_angle_detection(folder_up: str, folder: str,
 
 if __name__ == "__main__":
 
-    folder_up = "/home/guillaume/NAS/SwimmingPVP360/SwimmingPVP_23-07-25"
-    mire_info_path = f"{folder_up}/2023-07-25_18h06m22s_calib/mire_info.json"
+    folder_up = "/home/guillaume/NAS/SwimmingPVP360/SwimmingPVP_23-09-01"
+    mire_info_path = f"{folder_up}/2023-09-01_17h21m57s_calib/mire_info.json"
     exp_info_file = os.path.join(folder_up, "exp-info.csv")
-    folder_list = [f for f in os.listdir(folder_up) if not f.startswith(".") and os.path.isdir(os.path.join(folder_up, f)) ]
+    folder_list = [f for f in os.listdir(folder_up) if not f.startswith(".") and not f.endswith("calib") and os.path.isdir(os.path.join(folder_up, f)) ]
     for folder in folder_list:
         print(folder)
         full_folder = os.path.join(folder_up, folder)
